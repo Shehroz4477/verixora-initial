@@ -23,6 +23,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Identity", "Identity", "{F3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Domain", "modules\Identity\Identity.Domain\Identity.Domain\Identity.Domain.csproj", "{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "homes", "homes", "{D2C842B7-F5BF-4FC9-A507-CBB14F60C81C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Homes.Domain", "modules\Homes\Homes.Domain\Homes.Domain\Homes.Domain.csproj", "{CF3D321C-E5AF-4A6F-A03B-8F17F32BDD6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +45,10 @@ Global
 		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF3D321C-E5AF-4A6F-A03B-8F17F32BDD6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF3D321C-E5AF-4A6F-A03B-8F17F32BDD6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF3D321C-E5AF-4A6F-A03B-8F17F32BDD6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF3D321C-E5AF-4A6F-A03B-8F17F32BDD6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,5 +58,7 @@ Global
 		{B4E700E7-2A15-49BA-8D8E-3972E9AF8D05} = {E5C52010-2617-4E20-A3A1-C91D6387D7AF}
 		{F3B2F1ED-3E50-4F7A-BD55-A83C0C1D5FCC} = {15CA1CD5-F3FB-4DFB-868D-0AE704AFFB18}
 		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE} = {F3B2F1ED-3E50-4F7A-BD55-A83C0C1D5FCC}
+		{D2C842B7-F5BF-4FC9-A507-CBB14F60C81C} = {15CA1CD5-F3FB-4DFB-868D-0AE704AFFB18}
+		{CF3D321C-E5AF-4A6F-A03B-8F17F32BDD6B} = {D2C842B7-F5BF-4FC9-A507-CBB14F60C81C}
 	EndGlobalSection
 EndGlobal
