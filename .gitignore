@@ -1,0 +1,57 @@
+# ============================================================
+# VERIXORA – .gitignore
+# ============================================================
+# Summary:
+#   Excludes build output, IDE configs, secrets, and
+#   environment files from Git. This enforces ADR-031
+#   (no secrets in source control) and keeps the repository
+#   clean for all developers regardless of their local tools.
+# ============================================================
+
+# --- .NET Build Artifacts ---
+# Why: bin/ and obj/ contain compiled binaries that are
+# regenerated on every build. Committing them causes merge
+# conflicts and bloats the repository.
+[Bb]in/
+[Oo]bj/
+
+# --- IDE / Editor Files ---
+# Why: These are personal IDE settings (Visual Studio, Rider,
+# VS Code). Each developer has their own preferences.
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.swp
+*.sln.docstates
+
+# --- NuGet ---
+# Why: Packages are restored via dotnet restore. Committing
+# the actual .nupkg files is unnecessary and wastes space.
+**/packages/*
+!**/packages/repositories.config
+
+# --- Secrets – ADR-031: Secrets Management ---
+# Why: Connection strings, JWT signing keys, and API credentials
+# must NEVER be committed. They are injected at deployment time
+# from Azure Key Vault or AWS Secrets Manager.
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+!appsettings.Testing.json
+!appsettings.Staging.json
+!appsettings.Production.json
+secrets.json
+*.env
+
+# --- Docker ---
+# Why: docker-compose.override.yml is for local overrides.
+# .env files may contain credentials.
+docker-compose.override.yml
+
+# --- OS Generated Files ---
+# Why: OS-specific junk (macOS .DS_Store, Windows Thumbs.db)
+# should never enter the repository.
+.DS_Store
+Thumbs.db

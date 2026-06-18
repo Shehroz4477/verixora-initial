@@ -1,0 +1,142 @@
+# ============================================================
+# VERIXORA – .editorconfig
+# ============================================================
+# Summary:
+#   Defines coding style and formatting rules for the entire
+#   solution. Ties into the Roslyn compiler and IDE analyzers
+#   (Visual Studio, Rider, VS Code) so every developer writes
+#   code the same way. Also sets C# 12 preferences and
+#   enforces nullable reference types globally.
+#
+#   Key rules:
+#     - 4-space indentation, LF line endings, UTF-8
+#     - Nullable reference types enabled (C# 8+)
+#     - Expression-bodied members preferred where readable
+#     - Pattern matching over legacy null checks
+#     - Throw expressions for concise guard clauses
+# ============================================================
+
+# --- Root Settings (applies to ALL file types) ---
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+# Why: Consistency prevents git diff noise and cross-platform issues.
+
+# --- C# Specific Rules ---
+[*.cs]
+
+# Use predefined types (int instead of Int32, string instead of String)
+dotnet_style_predefined_type_for_locals_parameters_members = true:silent
+dotnet_style_predefined_type_for_member_access = true:silent
+
+# 'var' preferences: use 'var' when type is obvious from assignment,
+# but avoid 'var' for built-in types (int, string, bool) for clarity.
+csharp_style_var_for_built_in_types = false:silent
+csharp_style_var_when_type_is_apparent = true:silent
+csharp_style_var_elsewhere = false:silent
+
+# Prefer 'readonly' fields when possible
+dotnet_style_readonly_field = true:suggestion
+
+# Require braces on single-line statements (avoid bug-prone braceless if)
+csharp_prefer_braces = true:silent
+
+# Expression-bodied members: use => for simple methods and properties
+csharp_style_expression_bodied_methods = true:silent
+csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_style_expression_bodied_operators = true:silent
+
+# Prefer pattern matching over 'as' + null check
+csharp_style_pattern_matching_over_as_with_null_check = true:error
+# Why: 'x is Type t' is cleaner and null-safe.
+
+# Prefer throw expressions (e.g., value ?? throw new ArgumentNullException())
+csharp_style_throw_expression = true:error
+
+# Prefer conditional delegate call (?.Invoke) over if-not-null check
+csharp_style_conditional_delegate_call = true:error
+
+# Prefer null checks over type checks for overloads
+csharp_style_prefer_null_check_over_type_check = true:error
+
+# IDE0161: Convert to file-scoped namespace (C# 10+)
+csharp_style_namespace_declarations = file_scoped:warning
+
+# Nullable reference types: annotations MUST be used everywhere
+csharp_nullable_reference_types = true
+# Why: Prevents NullReferenceExceptions at compile time.
+
+# Order modifiers per .NET Runtime conventions
+dotnet_sort_system_directives_first = true
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:silent
+csharp_indent_labels = one_less_than_current
+csharp_using_directive_placement = outside_namespace:silent
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_method_group_conversion = true:silent
+csharp_style_prefer_top_level_statements = true:silent
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_prefer_system_threading_lock = true:suggestion
+csharp_style_expression_bodied_indexers = true:silent
+csharp_style_expression_bodied_accessors = true:silent
+csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_expression_bodied_local_functions = false:silent
+
+[*.{cs,vb}]
+#### Naming styles ####
+
+# Naming rules
+
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i
+
+dotnet_naming_rule.types_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.types_should_be_pascal_case.symbols = types
+dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
+dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+
+# Symbol specifications
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.interface.required_modifiers = 
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum
+dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.types.required_modifiers = 
+
+dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
+dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.non_field_members.required_modifiers = 
+
+# Naming styles
+
+dotnet_naming_style.begins_with_i.required_prefix = I
+dotnet_naming_style.begins_with_i.required_suffix = 
+dotnet_naming_style.begins_with_i.word_separator = 
+dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_style.pascal_case.required_prefix = 
+dotnet_naming_style.pascal_case.required_suffix = 
+dotnet_naming_style.pascal_case.word_separator = 
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+tab_width = 4
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
