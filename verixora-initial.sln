@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "modules", "modules", "{15CA
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Identity", "Identity", "{F3B2F1ED-3E50-4F7A-BD55-A83C0C1D5FCC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Domain", "modules\Identity\Identity.Domain\Identity.Domain\Identity.Domain.csproj", "{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,10 @@ Global
 		{B4E700E7-2A15-49BA-8D8E-3972E9AF8D05}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4E700E7-2A15-49BA-8D8E-3972E9AF8D05}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4E700E7-2A15-49BA-8D8E-3972E9AF8D05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -43,5 +49,6 @@ Global
 		{8149BEDA-60C1-4431-9DCA-6B8BEF2257A8} = {E5C52010-2617-4E20-A3A1-C91D6387D7AF}
 		{B4E700E7-2A15-49BA-8D8E-3972E9AF8D05} = {E5C52010-2617-4E20-A3A1-C91D6387D7AF}
 		{F3B2F1ED-3E50-4F7A-BD55-A83C0C1D5FCC} = {15CA1CD5-F3FB-4DFB-868D-0AE704AFFB18}
+		{1DFD15BB-D37D-4B9B-BFE5-8F89D18A32BE} = {F3B2F1ED-3E50-4F7A-BD55-A83C0C1D5FCC}
 	EndGlobalSection
 EndGlobal
