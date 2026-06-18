@@ -43,6 +43,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuditLogs.Domain", "modules
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AuditLogs", "AuditLogs", "{91A2FEFC-342A-45C8-A9A7-01A93A593A31}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FaceVerification.Domain", "modules\FaceVerification\FaceVerification.Domain\FaceVerification.Domain.csproj", "{F55DCBC3-F701-41EC-885E-425E52CDF30D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FaceVerification", "FaceVerification", "{7A9D0ADA-82C2-4E0A-B915-7584ACBDD1C9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +81,10 @@ Global
 		{C6107B27-9A85-49D4-8C3C-3387BAAF0061}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6107B27-9A85-49D4-8C3C-3387BAAF0061}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6107B27-9A85-49D4-8C3C-3387BAAF0061}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F55DCBC3-F701-41EC-885E-425E52CDF30D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F55DCBC3-F701-41EC-885E-425E52CDF30D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F55DCBC3-F701-41EC-885E-425E52CDF30D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F55DCBC3-F701-41EC-885E-425E52CDF30D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -96,6 +104,8 @@ Global
 		{1F14E210-74B6-4DFC-99D2-03885DDB582B} = {5F623EC0-280C-4362-AB1C-F3015258B71E}
 		{C6107B27-9A85-49D4-8C3C-3387BAAF0061} = {91A2FEFC-342A-45C8-A9A7-01A93A593A31}
 		{91A2FEFC-342A-45C8-A9A7-01A93A593A31} = {5F623EC0-280C-4362-AB1C-F3015258B71E}
+		{F55DCBC3-F701-41EC-885E-425E52CDF30D} = {7A9D0ADA-82C2-4E0A-B915-7584ACBDD1C9}
+		{7A9D0ADA-82C2-4E0A-B915-7584ACBDD1C9} = {5F623EC0-280C-4362-AB1C-F3015258B71E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {685BF8AF-228B-44FD-B67E-468DCB511806}
