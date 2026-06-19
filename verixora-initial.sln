@@ -51,6 +51,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authorization.Domain", "mod
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Authorization", "Authorization", "{71C8E0D5-D5B9-4048-BB48-7FBB88DF4BA0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiHost", "api-host\ApiHost\ApiHost.csproj", "{17729A7C-AAB2-4F96-9755-14AC4AD9B0FF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api-host", "api-host", "{36EBEE89-650C-4A91-8F1E-09D2FF06FE94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +97,10 @@ Global
 		{1EB7A87E-0568-4608-8426-19D5D44472CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1EB7A87E-0568-4608-8426-19D5D44472CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1EB7A87E-0568-4608-8426-19D5D44472CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17729A7C-AAB2-4F96-9755-14AC4AD9B0FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17729A7C-AAB2-4F96-9755-14AC4AD9B0FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17729A7C-AAB2-4F96-9755-14AC4AD9B0FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17729A7C-AAB2-4F96-9755-14AC4AD9B0FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -116,6 +124,7 @@ Global
 		{7A9D0ADA-82C2-4E0A-B915-7584ACBDD1C9} = {5F623EC0-280C-4362-AB1C-F3015258B71E}
 		{1EB7A87E-0568-4608-8426-19D5D44472CF} = {71C8E0D5-D5B9-4048-BB48-7FBB88DF4BA0}
 		{71C8E0D5-D5B9-4048-BB48-7FBB88DF4BA0} = {5F623EC0-280C-4362-AB1C-F3015258B71E}
+		{17729A7C-AAB2-4F96-9755-14AC4AD9B0FF} = {36EBEE89-650C-4A91-8F1E-09D2FF06FE94}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {685BF8AF-228B-44FD-B67E-468DCB511806}
