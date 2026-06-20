@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Identity.Infrastructure;
+using MediatR;
+using Identity.Application;
+using Identity.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +37,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddControllers();
+// Add Identity module
+builder.Services.AddIdentityInfrastructure(builder.Configuration);
+
+// Add MediatR (scanning all application assemblies that contain handlers)
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(RegisterUserCommandHandler).Assembly);
+});
+
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(AuthController).Assembly);
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

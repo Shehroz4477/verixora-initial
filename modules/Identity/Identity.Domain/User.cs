@@ -12,6 +12,7 @@ public class User : Entity, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
 
     public TrustedDevice? TrustedDevice { get; private set; }
+    public ICollection<FaceEmbedding> FaceEmbeddings { get; private set; } = new List<FaceEmbedding>();
 
     // EF Core parameterless constructor
     private User()
