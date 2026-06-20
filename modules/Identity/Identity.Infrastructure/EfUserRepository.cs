@@ -27,6 +27,11 @@ public class EfUserRepository : IUserRepository
     public async Task<bool> PhoneNumberExistsAsync(string phoneNumber, CancellationToken cancellationToken = default)
         => await _context.Users.AnyAsync(u => u.PhoneNumber == phoneNumber, cancellationToken);
 
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    => await _context.Users
+        .Include(u => u.TrustedDevice)
+        .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
+
     public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         => await _context.Users.AddAsync(user, cancellationToken);
 

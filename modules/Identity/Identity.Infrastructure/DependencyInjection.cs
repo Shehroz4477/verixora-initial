@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddSingleton<IOtpService, MockOtpService>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IEmailService, MockEmailService>();
+        services.AddSingleton<IEmailOtpService, MockEmailOtpService>();
 
         return services;
     }
