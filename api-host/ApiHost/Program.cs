@@ -5,6 +5,12 @@ using Identity.Infrastructure;
 using MediatR;
 using Identity.Application;
 using Identity.Presentation;
+using Devices.Infrastructure;
+using Devices.Presentation;
+using Devices.Application;
+using SmartLocks.Infrastructure;
+using SmartLocks.Presentation;
+using SmartLocks.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,15 +45,21 @@ builder.Services.AddAuthorization();
 
 // Add Identity module
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
+builder.Services.AddDevicesInfrastructure(builder.Configuration);
+builder.Services.AddSmartLocksInfrastructure(builder.Configuration);
 
 // Add MediatR (scanning all application assemblies that contain handlers)
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(RegisterUserCommandHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(RegisterDeviceCommandHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(UnlockDoorCommandHandler).Assembly);
 });
 
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(AuthController).Assembly);
+    .AddApplicationPart(typeof(AuthController).Assembly)
+    .AddApplicationPart(typeof(DevicesController).Assembly)
+    .AddApplicationPart(typeof(SmartLocksController).Assembly);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

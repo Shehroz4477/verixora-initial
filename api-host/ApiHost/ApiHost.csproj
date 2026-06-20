@@ -20,14 +20,20 @@
     <ProjectReference Include="..\..\building-blocks\BuildingBlocks.Infrastructure\BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\..\modules\AuditLogs\AuditLogs.Domain\AuditLogs.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Authorization\Authorization.Domain\Authorization.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\Devices\Devices.Application\Devices.Application.csproj" />
     <ProjectReference Include="..\..\modules\Devices\Devices.Domain\Devices.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\Devices\Devices.Infrastructure\Devices.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\modules\Devices\Devices.Presentation\Devices.Presentation.csproj" />
     <ProjectReference Include="..\..\modules\FaceVerification\FaceVerification.Domain\FaceVerification.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Homes\Homes.Domain\Homes.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Application\Identity.Application\Identity.Application.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Domain\Identity.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Presentation\Identity.Presentation.csproj" />
+    <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Application\SmartLocks.Application.csproj" />
     <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Domain\SmartLocks.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Infrastructure\SmartLocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Presentation\SmartLocks.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

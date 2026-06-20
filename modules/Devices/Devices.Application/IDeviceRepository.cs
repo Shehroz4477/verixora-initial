@@ -1,0 +1,11 @@
+using Devices.Domain;
+
+namespace Devices.Application;
+
+public interface IDeviceRepository
+{
+    Task<Device?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<List<Device>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default);
+    Task AddAsync(Device device, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Device device, CancellationToken cancellationToken = default);
+}

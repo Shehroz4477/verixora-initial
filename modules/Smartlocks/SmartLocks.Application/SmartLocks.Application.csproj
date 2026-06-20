@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\BuildingBlocks.Domain\BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\Authorization\Authorization.Domain\Authorization.Domain.csproj" />
+    <ProjectReference Include="..\..\Devices\Devices.Domain\Devices.Domain.csproj" />
+    <ProjectReference Include="..\..\FaceVerification\FaceVerification.Domain\FaceVerification.Domain.csproj" />
+    <ProjectReference Include="..\SmartLocks.Domain\SmartLocks.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.2.0" />
+  </ItemGroup>
+
+</Project>
