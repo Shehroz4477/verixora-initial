@@ -37,4 +37,32 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
         }
     }
+
+    [HttpPost("send-login-otp")]
+    public async Task<IActionResult> SendLoginOtp([FromBody] SendLoginOtpCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
 }
