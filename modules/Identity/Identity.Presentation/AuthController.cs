@@ -65,4 +65,46 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
         }
     }
+
+    [HttpPost("set-email")]
+    public async Task<IActionResult> SetEmail([FromBody] SetEmailCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
+    [HttpPost("send-verification-email")]
+    public async Task<IActionResult> SendVerificationEmail([FromBody] SendEmailVerificationCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
 }

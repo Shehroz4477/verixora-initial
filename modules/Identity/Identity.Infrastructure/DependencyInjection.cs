@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IOtpService, MockOtpService>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<IEmailService, MockEmailService>();
 
         return services;
     }
