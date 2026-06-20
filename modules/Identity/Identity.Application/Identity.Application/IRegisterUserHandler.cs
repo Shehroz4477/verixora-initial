@@ -6,6 +6,7 @@ public record RegisterUserCommand(
     string PhoneNumber,
     string Password,
     string ConfirmPassword,
+    string Otp,
     string? Email = null
 ) : IRequest<RegisterUserResult>;
 

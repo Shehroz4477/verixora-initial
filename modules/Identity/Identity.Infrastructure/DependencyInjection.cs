@@ -39,6 +39,7 @@ public static class DependencyInjection
         // Register application dependencies
         services.AddScoped<IUserRepository, EfUserRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<IOtpService, MockOtpService>();
 
         return services;
     }

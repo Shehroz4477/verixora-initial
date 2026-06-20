@@ -16,6 +16,14 @@ public class AuthController : ControllerBase
         _mediator = mediator;
     }
 
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(result);
+    }
+
+    // Update the existing register endpoint (already there, just ensure it's correct)
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
     {
