@@ -1,0 +1,38 @@
+The page says **"Python 3.11.9 was the last full bugfix release of Python 3.11 with binary installers."**  
+So you need the **3.11.9 installer**, not the source-only 3.11.15.
+
+---
+
+### Step‑by‑step:
+
+1. **Stay on the same page** you're on (the 3.11.15 release page).  
+2. **Scroll down to the "Files" section** and click the link for the **3.11.9 release** (it's usually mentioned or linked).  
+   Or go directly to: https://www.python.org/downloads/release/python-3119/  
+
+3. On the **Python 3.11.9** page, scroll to **Files** and download:  
+   ```
+   Windows installer (64-bit) → python-3.11.9-amd64.exe
+   ```
+
+4. **Run the installer**:  
+   - ✅ Check **"Add Python 3.11 to PATH"**  
+   - Click **Install Now**
+
+5. **Open a new Command Prompt**, then:
+
+```cmd
+cd C:\Users\Shehroz\source\repos\Shehroz4477\verixora-initial\face-service
+pip install -r requirements.txt
+```
+
+It should install cleanly this time.
+
+---
+
+Once it succeeds, say **"done"** and we'll start the Python face service and test it.
+
+
+
+cd face-service
+pip install -r requirements.txt
+uvicorn app:app --host 0.0.0.0 --port 5001

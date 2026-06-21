@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using BuildingBlocks.Domain;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -37,9 +38,11 @@ public class SmartLocksController : ControllerBase
         try
         {
             var userId = GetUserIdFromToken();
+            var userRole = GetUserRoleFromToken();
             var command = new UnlockDoorCommand(
                 lockId,
                 userId,
+                userRole,
                 request.FaceImage?.OpenReadStream(),
                 request.IdempotencyKey ?? Guid.NewGuid().ToString()
             );
@@ -56,6 +59,12 @@ public class SmartLocksController : ControllerBase
     {
         var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         return claim is not null ? Guid.Parse(claim.Value) : Guid.Empty;
+    }
+
+    private string GetUserRoleFromToken()
+    {
+        var claim = User.FindFirst(System.Security.Claims.ClaimTypes.Role);
+        return claim?.Value ?? "Guest";
     }
 }
 

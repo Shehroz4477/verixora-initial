@@ -11,6 +11,9 @@ using Devices.Application;
 using SmartLocks.Infrastructure;
 using SmartLocks.Presentation;
 using SmartLocks.Application;
+using AuditLogs.Infrastructure;
+using AuditLogs.Presentation;
+using AuditLogs.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,10 +46,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<IAuditLogService,AuditLogService>();
+
 // Add Identity module
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddDevicesInfrastructure(builder.Configuration);
 builder.Services.AddSmartLocksInfrastructure(builder.Configuration);
+builder.Services.AddAuditLogsInfrastructure(builder.Configuration);
 
 // Add MediatR (scanning all application assemblies that contain handlers)
 builder.Services.AddMediatR(cfg =>
@@ -54,12 +60,14 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(RegisterUserCommandHandler).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(RegisterDeviceCommandHandler).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(UnlockDoorCommandHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(LogAuditCommandHandler).Assembly);
 });
 
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(AuthController).Assembly)
     .AddApplicationPart(typeof(DevicesController).Assembly)
-    .AddApplicationPart(typeof(SmartLocksController).Assembly);
+    .AddApplicationPart(typeof(SmartLocksController).Assembly)
+    .AddApplicationPart(typeof(AuditLogsController).Assembly);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

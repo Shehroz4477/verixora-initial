@@ -34,7 +34,7 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             throw new DomainException("Smart lock not found.");
 
         // 1. Authorization check
-        if (!await _authService.CanUnlockAsync(request.UserId, request.LockId, smartLock.HomeId, cancellationToken))
+        if (!await _authService.CanUnlockAsync(request.UserId, request.LockId, smartLock.HomeId, request.UserRole, cancellationToken))
         {
             await _auditLogService.LogAsync(request.LockId, request.UserId, "Unlock", false, "Authorization failed");
             throw new DomainException("Access denied by authorization policy.");

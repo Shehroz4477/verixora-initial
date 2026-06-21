@@ -18,7 +18,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\building-blocks\BuildingBlocks.Domain\BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\..\building-blocks\BuildingBlocks.Infrastructure\BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\modules\AuditLogs\AuditLogs.Application\AuditLogs.Application.csproj" />
     <ProjectReference Include="..\..\modules\AuditLogs\AuditLogs.Domain\AuditLogs.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\AuditLogs\AuditLogs.Infrastructure\AuditLogs.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\modules\AuditLogs\AuditLogs.Presentation\AuditLogs.Presentation.csproj" />
     <ProjectReference Include="..\..\modules\Authorization\Authorization.Domain\Authorization.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Devices\Devices.Application\Devices.Application.csproj" />
     <ProjectReference Include="..\..\modules\Devices\Devices.Domain\Devices.Domain.csproj" />

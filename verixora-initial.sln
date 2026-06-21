@@ -73,6 +73,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartLocks.Infrastructure",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartLocks.Presentation", "modules\Smartlocks\SmartLocks.Presentation\SmartLocks.Presentation.csproj", "{447378A9-2FF0-4F5B-A246-F33A7D7539DE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuditLogs.Application", "modules\AuditLogs\AuditLogs.Application\AuditLogs.Application.csproj", "{5CF8AD25-4F33-4B58-8B09-09F004065FCF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuditLogs.Infrastructure", "modules\AuditLogs\AuditLogs.Infrastructure\AuditLogs.Infrastructure.csproj", "{18A1E423-40BF-4815-8BC8-A98C4C8F69E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuditLogs.Presentation", "modules\AuditLogs\AuditLogs.Presentation\AuditLogs.Presentation.csproj", "{62E7CFCC-EE5C-4033-90BE-443218E169A6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "face-service", "face-service", "{EF35FFC7-2353-4C1B-A757-45FF053D8755}"
+	ProjectSection(SolutionItems) = preProject
+		face-service\app.py = face-service\app.py
+		face-service\Dockerfile = face-service\Dockerfile
+		face-service\requirements.txt = face-service\requirements.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -155,6 +168,18 @@ Global
 		{447378A9-2FF0-4F5B-A246-F33A7D7539DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{447378A9-2FF0-4F5B-A246-F33A7D7539DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{447378A9-2FF0-4F5B-A246-F33A7D7539DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CF8AD25-4F33-4B58-8B09-09F004065FCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CF8AD25-4F33-4B58-8B09-09F004065FCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CF8AD25-4F33-4B58-8B09-09F004065FCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CF8AD25-4F33-4B58-8B09-09F004065FCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18A1E423-40BF-4815-8BC8-A98C4C8F69E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18A1E423-40BF-4815-8BC8-A98C4C8F69E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18A1E423-40BF-4815-8BC8-A98C4C8F69E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18A1E423-40BF-4815-8BC8-A98C4C8F69E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62E7CFCC-EE5C-4033-90BE-443218E169A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62E7CFCC-EE5C-4033-90BE-443218E169A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62E7CFCC-EE5C-4033-90BE-443218E169A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62E7CFCC-EE5C-4033-90BE-443218E169A6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -188,6 +213,9 @@ Global
 		{7611E04E-2B09-49C5-BBE0-DFD607716997} = {1F14E210-74B6-4DFC-99D2-03885DDB582B}
 		{BB4E39B5-FBF4-47D6-A83D-F52BA83C9B92} = {1F14E210-74B6-4DFC-99D2-03885DDB582B}
 		{447378A9-2FF0-4F5B-A246-F33A7D7539DE} = {1F14E210-74B6-4DFC-99D2-03885DDB582B}
+		{5CF8AD25-4F33-4B58-8B09-09F004065FCF} = {91A2FEFC-342A-45C8-A9A7-01A93A593A31}
+		{18A1E423-40BF-4815-8BC8-A98C4C8F69E3} = {91A2FEFC-342A-45C8-A9A7-01A93A593A31}
+		{62E7CFCC-EE5C-4033-90BE-443218E169A6} = {91A2FEFC-342A-45C8-A9A7-01A93A593A31}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {685BF8AF-228B-44FD-B67E-468DCB511806}

@@ -55,10 +55,16 @@ public static class DependencyInjection
         services.AddSingleton<IMqttPublisher>(sp => new MqttPublisher(brokerHost, brokerPort));
 
         // Audit Log (mock for now; later replace with real AuditLogs module)
-        services.AddSingleton<IAuditLogService, MockAuditLogService>();
+        //services.AddSingleton<IAuditLogService, MockAuditLogService>();
 
-        services.AddSingleton<IAuthorizationService, MockAuthorizationService>();
-        services.AddSingleton<IFaceVerificationProvider, MockFaceVerificationProvider>();
+        //services.AddSingleton<IAuthorizationService, MockAuthorizationService>();
+        services.AddSingleton<IAuthorizationService, ScheduleBasedAuthorizationService>();
+        //services.AddSingleton<IFaceVerificationProvider, MockFaceVerificationProvider>();
+        services.AddHttpClient<IFaceVerificationProvider, PythonFaceVerificationProvider>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["FaceService:BaseUrl"] ?? "http://localhost:5001");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         return services;
     }
