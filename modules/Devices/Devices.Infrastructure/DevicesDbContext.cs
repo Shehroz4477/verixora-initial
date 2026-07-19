@@ -26,6 +26,11 @@ public class DevicesDbContext : DbContext
             entity.Property(device => device.MqttTopic).HasColumnName(isPostgreSql ? "mqtt_topic" : "MqttTopic").IsRequired().HasMaxLength(256);
             entity.Property(device => device.Status).HasColumnName(isPostgreSql ? "status" : "Status").IsRequired().HasConversion<string>().HasMaxLength(20);
             entity.Property(device => device.CreatedAt).HasColumnName(isPostgreSql ? "created_at_utc" : "CreatedAtUtc").IsRequired();
+            entity.Property(device => device.ProvisioningTokenHash).HasColumnName(isPostgreSql ? "provisioning_token_hash" : "ProvisioningTokenHash").HasMaxLength(128);
+            entity.Property(device => device.ProvisioningExpiresAt).HasColumnName(isPostgreSql ? "provisioning_expires_at_utc" : "ProvisioningExpiresAtUtc");
+            entity.Property(device => device.ControllerPublicKeyThumbprint).HasColumnName(isPostgreSql ? "controller_public_key_thumbprint" : "ControllerPublicKeyThumbprint").HasMaxLength(128);
+            entity.Property(device => device.HardwareAttestationSubject).HasColumnName(isPostgreSql ? "hardware_attestation_subject" : "HardwareAttestationSubject").HasMaxLength(256);
+            entity.Property(device => device.ProvisionedAt).HasColumnName(isPostgreSql ? "provisioned_at_utc" : "ProvisionedAtUtc");
         });
     }
 }

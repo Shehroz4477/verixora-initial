@@ -18,11 +18,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{D4
 		database\postgresql\003_devices.sql = database\postgresql\003_devices.sql
 		database\postgresql\004_smartlocks.sql = database\postgresql\004_smartlocks.sql
 		database\postgresql\005_auditlogs.sql = database\postgresql\005_auditlogs.sql
+		database\postgresql\006_controller_provisioning.sql = database\postgresql\006_controller_provisioning.sql
 		database\sqlserver\001_homes.sql = database\sqlserver\001_homes.sql
 		database\sqlserver\002_identity.sql = database\sqlserver\002_identity.sql
 		database\sqlserver\003_devices.sql = database\sqlserver\003_devices.sql
 		database\sqlserver\004_smartlocks.sql = database\sqlserver\004_smartlocks.sql
 		database\sqlserver\005_auditlogs.sql = database\sqlserver\005_auditlogs.sql
+		database\sqlserver\006_controller_provisioning.sql = database\sqlserver\006_controller_provisioning.sql
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "postman", "postman", "{32B92054-09D1-4A6D-8B5A-3340D164A086}"
@@ -141,6 +143,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Verixora.Identity.Application.Tests", "tests\Verixora.Identity.Application.Tests\Verixora.Identity.Application.Tests.csproj", "{014168AF-857B-4113-B962-05D750DA0E59}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Verixora.SmartLocks.Application.Tests", "tests\Verixora.SmartLocks.Application.Tests\Verixora.SmartLocks.Application.Tests.csproj", "{3F0A9EAE-1F99-4D93-80A7-83EB4F7E86E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Verixora.Devices.Application.Tests", "tests\Verixora.Devices.Application.Tests\Verixora.Devices.Application.Tests.csproj", "{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -488,6 +492,18 @@ Global
 		{3F0A9EAE-1F99-4D93-80A7-83EB4F7E86E8}.Release|x64.Build.0 = Release|Any CPU
 		{3F0A9EAE-1F99-4D93-80A7-83EB4F7E86E8}.Release|x86.ActiveCfg = Release|Any CPU
 		{3F0A9EAE-1F99-4D93-80A7-83EB4F7E86E8}.Release|x86.Build.0 = Release|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Debug|x64.Build.0 = Debug|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Debug|x86.Build.0 = Debug|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Release|x64.ActiveCfg = Release|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Release|x64.Build.0 = Release|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Release|x86.ActiveCfg = Release|Any CPU
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -532,6 +548,7 @@ Global
 		{0725FDF8-B10E-4CDC-B9FF-9AE44A6856B2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{014168AF-857B-4113-B962-05D750DA0E59} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{3F0A9EAE-1F99-4D93-80A7-83EB4F7E86E8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{C26B7B35-FB95-4BC3-B2A6-654638F7AB3F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {685BF8AF-228B-44FD-B67E-468DCB511806}

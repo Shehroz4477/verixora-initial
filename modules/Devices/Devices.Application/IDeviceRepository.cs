@@ -9,4 +9,5 @@ public interface IDeviceRepository
     Task<List<Device>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default);
     Task AddAsync(Device device, CancellationToken cancellationToken = default);
     Task UpdateAsync(Device device, CancellationToken cancellationToken = default);
+    Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default);
 }

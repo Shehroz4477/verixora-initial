@@ -10,6 +10,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddDevicesInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<IControllerProvisioningTokenService, ControllerProvisioningTokenService>();
+        services.AddSingleton<IControllerAttestationVerifier, DevelopmentOnlyControllerAttestationVerifier>();
         var mode = Enum.TryParse<DataAccessMode>(configuration["DataAccess:Mode"], ignoreCase: true, out var configuredMode)
             ? configuredMode
             : DataAccessMode.DapperStoredProcedure;

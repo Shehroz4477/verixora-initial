@@ -26,12 +26,22 @@ public class DevicesController : ControllerBase
         {
             var command = new RegisterDeviceCommand(request.HomeId, request.Name, request.HardwareId, GetCurrentUserId());
             var result = await _mediator.Send(command);
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
             return Ok(result);
         }
         catch (DomainException ex)
         {
             return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
         }
+    }
+
+    [AllowAnonymous]
+    [HttpPost("provisioning/complete")]
+    public async Task<IActionResult> CompleteProvisioning([FromBody] CompleteControllerProvisioningRequest request)
+    {
+        try { return Ok(await _mediator.Send(new CompleteControllerProvisioningCommand(request.DeviceId, request.ProvisioningToken, request.ControllerPublicKeyPem, request.HardwareAttestation))); }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message, code = ex.ErrorCode }); }
     }
 
     private Guid GetCurrentUserId()
@@ -45,3 +55,4 @@ public class DevicesController : ControllerBase
 }
 
 public sealed record RegisterDeviceRequest(Guid HomeId, string Name, string HardwareId);
+public sealed record CompleteControllerProvisioningRequest(Guid DeviceId, string ProvisioningToken, string ControllerPublicKeyPem, string? HardwareAttestation);

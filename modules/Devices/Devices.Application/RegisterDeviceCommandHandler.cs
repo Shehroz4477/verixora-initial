@@ -9,11 +9,13 @@ public class RegisterDeviceCommandHandler : IRequestHandler<RegisterDeviceComman
 {
     private readonly IDeviceRepository _deviceRepository;
     private readonly IHomeRepository _homeRepository;
+    private readonly IControllerProvisioningTokenService _provisioningTokenService;
 
-    public RegisterDeviceCommandHandler(IDeviceRepository deviceRepository, IHomeRepository homeRepository)
+    public RegisterDeviceCommandHandler(IDeviceRepository deviceRepository, IHomeRepository homeRepository, IControllerProvisioningTokenService provisioningTokenService)
     {
         _deviceRepository = deviceRepository;
         _homeRepository = homeRepository;
+        _provisioningTokenService = provisioningTokenService;
     }
 
     public async Task<RegisterDeviceResult> Handle(RegisterDeviceCommand request, CancellationToken cancellationToken)
@@ -29,9 +31,11 @@ public class RegisterDeviceCommandHandler : IRequestHandler<RegisterDeviceComman
             throw new DomainException("This controller is already registered.");
 
         var device = new Device(request.Name, request.HomeId, request.HardwareId);
+        var provisioningToken = _provisioningTokenService.Create();
+        device.BeginProvisioning(provisioningToken.Hash, provisioningToken.ExpiresAtUtc);
 
         await _deviceRepository.AddAsync(device, cancellationToken);
 
-        return new RegisterDeviceResult(device.Id, device.MqttTopic, device.Status.ToString(), device.HardwareId);
+        return new RegisterDeviceResult(device.Id, device.MqttTopic, device.Status.ToString(), device.HardwareId, provisioningToken.Value, provisioningToken.ExpiresAtUtc);
     }
 }

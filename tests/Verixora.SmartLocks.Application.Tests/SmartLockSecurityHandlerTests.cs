@@ -81,6 +81,7 @@ public sealed class SmartLockSecurityHandlerTests
         public Task<List<Device>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default) => Task.FromResult(_devices.Where(device => device.HomeId == homeId).ToList());
         public Task AddAsync(Device device, CancellationToken cancellationToken = default) { _devices.Add(device); return Task.CompletedTask; }
         public Task UpdateAsync(Device device, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default) => Task.FromResult(false);
     }
 
     private sealed class FixedHomeRepository(params HomeSummary[] homes) : IHomeRepository

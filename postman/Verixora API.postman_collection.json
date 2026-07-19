@@ -20,6 +20,8 @@
     { "key": "userId", "value": "" },
     { "key": "homeId", "value": "" },
     { "key": "controllerHardwareId", "value": "replace-with-the-controller-QR-hardware-id" },
+    { "key": "controllerProvisioningToken", "value": "" },
+    { "key": "controllerPublicKeyPem", "value": "replace-with-a-p256-subject-public-key-info-pem" },
     { "key": "smartLockId", "value": "" },
     { "key": "unlockIdempotencyKey", "value": "replace-with-a-new-uuid-per-unlock" }
   ],
@@ -115,7 +117,12 @@
         {
           "name": "Register pending ESP32 controller",
           "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/devices", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"homeId\": \"{{homeId}}\",\n  \"name\": \"Front Door ESP32\",\n  \"hardwareId\": \"{{controllerHardwareId}}\"\n}" } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('Controller remains pending secure provisioning', () => pm.expect(body.status).to.equal('Pending'));", "pm.test('Controller topic is assigned', () => pm.expect(body.mqttTopic).to.match(/^verixora\\//));", "pm.collectionVariables.set('deviceId', body.deviceId);"] } }]
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('Controller remains pending secure provisioning', () => pm.expect(body.status).to.equal('Pending'));", "pm.test('Controller topic is assigned', () => pm.expect(body.mqttTopic).to.match(/^verixora\\//));", "pm.test('Provisioning secret is returned only to the authenticated owner', () => pm.expect(body.provisioningToken).to.be.a('string').and.not.empty);", "pm.collectionVariables.set('deviceId', body.deviceId);", "pm.collectionVariables.set('controllerProvisioningToken', body.provisioningToken);"] } }]
+        },
+        {
+          "name": "Complete controller provisioning (local development only)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/devices/provisioning/complete", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"deviceId\": \"{{deviceId}}\",\n  \"provisioningToken\": \"{{controllerProvisioningToken}}\",\n  \"controllerPublicKeyPem\": \"{{controllerPublicKeyPem}}\",\n  \"hardwareAttestation\": \"local-development-only\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller provisioning succeeds only in explicit local development mode', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Controller becomes active', () => pm.expect(pm.response.json().status).to.equal('Active'));"] } }]
         },
         {
           "name": "Reject controller for an unauthorized home",

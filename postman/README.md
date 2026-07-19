@@ -4,4 +4,6 @@ Import the collection and **Verixora Local** environment, then run folders in nu
 
 OTP codes are deliberately never returned by API responses. For local development only, copy each code from the API console into its matching collection variable; use real SMS/email delivery in every non-development environment. The suite includes success, device-binding, invalid-OTP, authorization, email/web-login, pending-controller, lock-registration, and audit-trail regression cases for the endpoints implemented so far. A pending controller is deliberately rejected for door registration; it has no path to an unlock command until secure provisioning is completed.
 
+The provisioning request is deliberately development-only when using the `local-development-only` attestation marker. Production must configure a manufacturer/secure-element attestation verifier and MQTT mutual-TLS certificates; do not enable the development switch outside a local machine.
+
 The local API profile listens on `http://localhost:5166`; copy [the local API example configuration](../api-host/ApiHost/appsettings.Local.example.json) to `appsettings.Local.json`, set the local secrets, then run the API.

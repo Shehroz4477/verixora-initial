@@ -33,4 +33,15 @@ public class EfDeviceRepository : IDeviceRepository
         _context.Devices.Update(device);
         return _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default)
+    {
+        var device = await _context.Devices.SingleOrDefaultAsync(item => item.Id == deviceId, cancellationToken);
+        if (device is null)
+            return false;
+        try { device.CompleteProvisioning(provisioningTokenHash, publicKeyThumbprint, attestationSubject); }
+        catch (BuildingBlocks.Domain.DomainException) { return false; }
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }
