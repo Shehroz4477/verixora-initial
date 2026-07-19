@@ -1,7 +1,9 @@
 using BuildingBlocks.Domain;
 using Identity.Application;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Identity.Presentation;
 
@@ -17,6 +19,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("send-otp")]
+    [AllowAnonymous]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
     {
         var result = await _mediator.Send(command);
@@ -25,6 +28,7 @@ public class AuthController : ControllerBase
 
     // Update the existing register endpoint (already there, just ensure it's correct)
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
     {
         try
@@ -39,6 +43,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("send-login-otp")]
+    [AllowAnonymous]
     public async Task<IActionResult> SendLoginOtp([FromBody] SendLoginOtpCommand command)
     {
         try
@@ -53,6 +58,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         try
@@ -67,10 +73,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("set-email")]
-    public async Task<IActionResult> SetEmail([FromBody] SetEmailCommand command)
+    [Authorize]
+    public async Task<IActionResult> SetEmail([FromBody] SetEmailRequest request)
     {
         try
         {
+            var command = new SetEmailCommand(GetCurrentUserId(), request.Email);
             var result = await _mediator.Send(command);
             return Ok(result);
         }
@@ -81,10 +89,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("send-verification-email")]
-    public async Task<IActionResult> SendVerificationEmail([FromBody] SendEmailVerificationCommand command)
+    [Authorize]
+    public async Task<IActionResult> SendVerificationEmail()
     {
         try
         {
+            var command = new SendEmailVerificationCommand(GetCurrentUserId());
             var result = await _mediator.Send(command);
             return Ok(result);
         }
@@ -95,10 +105,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailCommand command)
+    [Authorize]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
     {
         try
         {
+            var command = new VerifyEmailCommand(GetCurrentUserId(), request.Code);
             var result = await _mediator.Send(command);
             return Ok(result);
         }
@@ -109,6 +121,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("web/send-login-otp")]
+    [AllowAnonymous]
     public async Task<IActionResult> WebSendLoginOtp([FromBody] WebLoginSendOtpCommand command)
     {
         try
@@ -123,6 +136,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("web/login")]
+    [AllowAnonymous]
     public async Task<IActionResult> WebLogin([FromBody] WebLoginCommand command)
     {
         try
@@ -135,4 +149,16 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
         }
     }
+
+    private Guid GetCurrentUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(value, out var userId))
+            throw new UnauthorizedAccessException("Authenticated user identifier is invalid.");
+
+        return userId;
+    }
 }
+
+public record SetEmailRequest(string Email);
+public record VerifyEmailRequest(string Code);

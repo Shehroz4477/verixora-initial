@@ -1,11 +1,13 @@
 using AuditLogs.Application;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuditLogs.Presentation;
 
 [ApiController]
 [Route("api/v1/auditlogs")]
+[Authorize]
 public class AuditLogsController : ControllerBase
 {
     private readonly IMediator _mediator;

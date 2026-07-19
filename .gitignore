@@ -44,6 +44,7 @@ appsettings.*.json
 !appsettings.Production.json
 secrets.json
 *.env
+infrastructure/.env
 
 # --- Docker ---
 # Why: docker-compose.override.yml is for local overrides.

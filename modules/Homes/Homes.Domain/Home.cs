@@ -26,6 +26,7 @@ public class Home : Entity, IAggregateRoot
         OwnerId = ownerId;
         CreatedAt = DateTime.UtcNow;
         MaxDevices = 20; // default device limit
+        _members.Add(new HomeMember(ownerId, Id, HomeMemberRole.Owner));
     }
 
     public void AddMember(Guid userId, HomeMemberRole role)

@@ -29,6 +29,9 @@
     <ProjectReference Include="..\..\modules\Devices\Devices.Presentation\Devices.Presentation.csproj" />
     <ProjectReference Include="..\..\modules\FaceVerification\FaceVerification.Domain\FaceVerification.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Homes\Homes.Domain\Homes.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\Homes\Homes.Application\Homes.Application.csproj" />
+    <ProjectReference Include="..\..\modules\Homes\Homes.Infrastructure\Homes.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\modules\Homes\Homes.Presentation\Homes.Presentation.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Application\Identity.Application\Identity.Application.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Domain\Identity.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />

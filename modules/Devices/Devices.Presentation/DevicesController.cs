@@ -1,12 +1,14 @@
 using BuildingBlocks.Domain;
 using Devices.Application;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Devices.Presentation;
 
 [ApiController]
 [Route("api/v1/devices")]
+[Authorize]
 public class DevicesController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -3,12 +3,14 @@ using BuildingBlocks.Domain;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using SmartLocks.Application;
 
 namespace SmartLocks.Presentation;
 
 [ApiController]
 [Route("api/v1/locks")]
+[Authorize]
 public class SmartLocksController : ControllerBase
 {
     private readonly IMediator _mediator;
