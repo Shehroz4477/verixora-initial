@@ -33,11 +33,14 @@ public class EfUserRepository : IUserRepository
         .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
 
     public async Task AddAsync(User user, CancellationToken cancellationToken = default)
-        => await _context.Users.AddAsync(user, cancellationToken);
+    {
+        await _context.Users.AddAsync(user, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 
     public Task UpdateAsync(User user, CancellationToken cancellationToken = default)
     {
         _context.Users.Update(user);
-        return Task.CompletedTask;
+        return _context.SaveChangesAsync(cancellationToken);
     }
 }

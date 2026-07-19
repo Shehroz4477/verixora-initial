@@ -1,8 +1,10 @@
+using BuildingBlocks.Infrastructure;
 using Identity.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace Identity.Infrastructure;
 
@@ -12,37 +14,55 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var provider = configuration["DatabaseProvider"] ?? "Sqlite";
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Data Source=verixora.db";
+        var provider = configuration["DatabaseProvider"] ?? throw new InvalidOperationException("DatabaseProvider is required.");
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
+        var mode = Enum.TryParse<DataAccessMode>(configuration["DataAccess:Mode"], ignoreCase: true, out var configuredMode)
+            ? configuredMode
+            : DataAccessMode.DapperStoredProcedure;
 
-        // Register EF Core DbContext with the correct provider
-        services.AddDbContext<IdentityDbContext>(options =>
+        if (mode == DataAccessMode.EfCore)
         {
-            _ = provider switch
+            services.AddDbContext<IdentityDbContext>(options =>
             {
-                "SqlServer" => options.UseSqlServer(connectionString),
-                "MySql" => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)),
-                "PostgreSql" => options.UseNpgsql(connectionString),
-                "Sqlite" => options.UseSqlite(connectionString),
-                _ => throw new NotSupportedException($"Database provider '{provider}' is not supported.")
+                _ = provider switch
+                {
+                    "SqlServer" => options.UseSqlServer(connectionString),
+                    "MySql" => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)),
+                    "PostgreSql" => options.UseNpgsql(connectionString),
+                    "Sqlite" => options.UseSqlite(connectionString),
+                    _ => throw new NotSupportedException($"Database provider '{provider}' is not supported.")
+                };
+
+                if (bool.TryParse(configuration["LogSql"], out var logSql) && logSql)
+                    options.LogTo(Console.WriteLine, LogLevel.Information);
+            });
+            services.AddScoped<IUserRepository, EfUserRepository>();
+        }
+        else
+        {
+            services.AddSingleton<DbConnectionFactory>();
+            _ = mode switch
+            {
+                DataAccessMode.DapperStoredProcedure => services.AddScoped<IUserRepository, DapperUserRepository>(),
+                DataAccessMode.AdoNetStoredProcedure => services.AddScoped<IUserRepository, AdoNetUserRepository>(),
+                _ => throw new NotSupportedException($"Data access mode '{mode}' is not supported.")
             };
+        }
 
-            // Log SQL in development
-            bool.TryParse(configuration["LogSql"], out var logSql);
-            if (logSql)
-            {
-                options.LogTo(Console.WriteLine, LogLevel.Information);
-            }
-        });
+        var redisConfiguration = configuration["Redis:Configuration"];
+        if (string.IsNullOrWhiteSpace(redisConfiguration))
+            throw new InvalidOperationException("Redis:Configuration is required. Redis is mandatory for OTPs and security controls.");
 
-        // Register application dependencies
-        services.AddScoped<IUserRepository, EfUserRepository>();
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConfiguration));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<IOtpService, MockOtpService>();
+        services.AddSingleton<ISmsService, LocalDevelopmentSmsService>();
+        services.AddSingleton<IEmailService, LocalDevelopmentEmailService>();
+        services.AddSingleton<RedisOtpService>();
+        services.AddSingleton<IOtpService>(serviceProvider => serviceProvider.GetRequiredService<RedisOtpService>());
+        services.AddSingleton<IEmailOtpService>(serviceProvider => serviceProvider.GetRequiredService<RedisOtpService>());
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
-        services.AddSingleton<IEmailService, MockEmailService>();
-        services.AddSingleton<IEmailOtpService, MockEmailOtpService>();
 
         return services;
     }

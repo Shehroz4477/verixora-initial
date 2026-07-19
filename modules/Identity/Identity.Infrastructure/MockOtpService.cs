@@ -2,29 +2,33 @@ using Identity.Application;
 
 namespace Identity.Infrastructure;
 
-public class MockOtpService : IOtpService
+/// <summary>
+/// Compatibility test double. The runtime composition always uses RedisOtpService.
+/// </summary>
+public sealed class MockOtpService : IOtpService
 {
-    // In-memory store for demo – phone -> (otp, expiry)
     private readonly Dictionary<string, (string Otp, DateTime Expiry)> _store = new();
 
-    public Task<string> SendOtpAsync(string phoneNumber)
+    public Task SendRegistrationOtpAsync(string phoneNumber) => SendAsync("registration", phoneNumber);
+    public Task<bool> ValidateRegistrationOtpAsync(string phoneNumber, string otp) => ValidateAsync("registration", phoneNumber, otp);
+    public Task SendLoginOtpAsync(string phoneNumber) => SendAsync("login", phoneNumber);
+    public Task<bool> ValidateLoginOtpAsync(string phoneNumber, string otp) => ValidateAsync("login", phoneNumber, otp);
+
+    private Task SendAsync(string purpose, string phoneNumber)
     {
-        var otp = "123456"; // fixed for demo
-        _store[phoneNumber] = (otp, DateTime.UtcNow.AddMinutes(5));
-        Console.WriteLine($"MOCK SMS to {phoneNumber}: Your OTP is {otp}");
-        return Task.FromResult(otp);
+        _store[$"{purpose}:{phoneNumber}"] = ("123456", DateTime.UtcNow.AddMinutes(5));
+        return Task.CompletedTask;
     }
 
-    public Task<bool> ValidateOtpAsync(string phoneNumber, string otp)
+    private Task<bool> ValidateAsync(string purpose, string phoneNumber, string otp)
     {
-        if (_store.TryGetValue(phoneNumber, out var entry))
+        var key = $"{purpose}:{phoneNumber}";
+        if (_store.TryGetValue(key, out var entry) && entry.Expiry > DateTime.UtcNow && entry.Otp == otp)
         {
-            if (entry.Expiry > DateTime.UtcNow && entry.Otp == otp)
-            {
-                _store.Remove(phoneNumber);
-                return Task.FromResult(true);
-            }
+            _store.Remove(key);
+            return Task.FromResult(true);
         }
+
         return Task.FromResult(false);
     }
 }

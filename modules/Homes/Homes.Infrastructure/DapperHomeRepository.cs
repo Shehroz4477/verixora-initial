@@ -21,7 +21,7 @@ public sealed class DapperHomeRepository(DbConnectionFactory connectionFactory) 
                 commandType: CommandType.StoredProcedure,
                 cancellationToken: cancellationToken)),
             "PostgreSql" => await connection.QuerySingleAsync<HomeSummary>(new CommandDefinition(
-                "select id as \"Id\", name as \"Name\", owner_id as \"OwnerId\", max_devices as \"MaxDevices\", created_at_utc as \"CreatedAtUtc\", 'Owner' as \"Role\" from homes.fn_create_home(@HomeId, @OwnerMemberId, @OwnerId, @Name)",
+                "select id as \"Id\", name as \"Name\", owner_id as \"OwnerId\", 'Owner' as \"Role\", max_devices as \"MaxDevices\", created_at_utc as \"CreatedAtUtc\" from homes.fn_create_home(@HomeId, @OwnerMemberId, @OwnerId, @Name)",
                 new { HomeId = home.Id, OwnerMemberId = ownerMember.Id, OwnerId = home.OwnerId, home.Name },
                 cancellationToken: cancellationToken)),
             _ => throw new NotSupportedException($"Homes routines are not available for '{connectionFactory.Provider}'.")

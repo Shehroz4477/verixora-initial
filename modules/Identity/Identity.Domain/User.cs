@@ -32,6 +32,35 @@ public class User : Entity, IAggregateRoot
         Email = null;
     }
 
+    /// <summary>
+    /// Rebuilds an aggregate read from a persistence boundary without allowing
+    /// infrastructure code to mutate individual domain properties.
+    /// </summary>
+    public static User Rehydrate(
+        Guid id,
+        string phoneNumber,
+        string passwordHash,
+        string? email,
+        bool emailVerified,
+        UserRole role,
+        DateTime createdAt,
+        TrustedDevice? trustedDevice = null)
+    {
+        var user = new User
+        {
+            Id = id,
+            PhoneNumber = phoneNumber,
+            PasswordHash = passwordHash,
+            Email = email,
+            EmailVerified = emailVerified,
+            Role = role,
+            CreatedAt = createdAt,
+            TrustedDevice = trustedDevice
+        };
+
+        return user;
+    }
+
     public void SetEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))

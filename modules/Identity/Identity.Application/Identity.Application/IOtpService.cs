@@ -2,6 +2,8 @@ namespace Identity.Application;
 
 public interface IOtpService
 {
-    Task<string> SendOtpAsync(string phoneNumber); // returns OTP for demo, normally void
-    Task<bool> ValidateOtpAsync(string phoneNumber, string otp);
+    Task SendRegistrationOtpAsync(string phoneNumber);
+    Task<bool> ValidateRegistrationOtpAsync(string phoneNumber, string otp);
+    Task SendLoginOtpAsync(string phoneNumber);
+    Task<bool> ValidateLoginOtpAsync(string phoneNumber, string otp);
 }

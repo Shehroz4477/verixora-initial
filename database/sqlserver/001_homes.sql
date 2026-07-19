@@ -60,7 +60,7 @@ begin
         values (@OwnerMemberId, @HomeId, @OwnerId, N'Owner', @CreatedAtUtc);
     commit transaction;
 
-    select Id, Name, OwnerId, MaxDevices, CreatedAtUtc
+    select Id, Name, OwnerId, N'Owner' as Role, MaxDevices, CreatedAtUtc
     from homes.Homes
     where Id = @HomeId;
 end

@@ -11,7 +11,7 @@ public sealed class AdoNetHomeRepository(DbConnectionFactory connectionFactory) 
     public async Task<HomeSummary> AddAsync(Home home, CancellationToken cancellationToken = default)
     {
         var owner = home.Members.Single(x => x.UserId == home.OwnerId && x.Role == HomeMemberRole.Owner);
-        return await ReadSingleAsync("homes.sp_CreateHome", "select id as \"Id\", name as \"Name\", owner_id as \"OwnerId\", max_devices as \"MaxDevices\", created_at_utc as \"CreatedAtUtc\", 'Owner' as \"Role\" from homes.fn_create_home(@HomeId, @OwnerMemberId, @OwnerId, @Name)", new Dictionary<string, object?> { ["@HomeId"] = home.Id, ["@OwnerMemberId"] = owner.Id, ["@OwnerId"] = home.OwnerId, ["@Name"] = home.Name }, cancellationToken);
+        return await ReadSingleAsync("homes.sp_CreateHome", "select id as \"Id\", name as \"Name\", owner_id as \"OwnerId\", 'Owner' as \"Role\", max_devices as \"MaxDevices\", created_at_utc as \"CreatedAtUtc\" from homes.fn_create_home(@HomeId, @OwnerMemberId, @OwnerId, @Name)", new Dictionary<string, object?> { ["@HomeId"] = home.Id, ["@OwnerMemberId"] = owner.Id, ["@OwnerId"] = home.OwnerId, ["@Name"] = home.Name }, cancellationToken);
     }
 
     public async Task<IReadOnlyList<HomeSummary>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default)

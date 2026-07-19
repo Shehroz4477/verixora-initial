@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
@@ -21,7 +21,7 @@ public class DbConnectionFactory
 
     public string Provider => _provider;
 
-    public IDbConnection CreateConnection() => _provider switch
+    public DbConnection CreateConnection() => _provider switch
     {
         "SqlServer" => new SqlConnection(_connectionString),
         "MySql" => new MySqlConnection(_connectionString),

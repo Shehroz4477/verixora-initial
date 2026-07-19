@@ -38,10 +38,8 @@
 # from Azure Key Vault or AWS Secrets Manager.
 appsettings.*.json
 !appsettings.json
-!appsettings.Development.json
-!appsettings.Testing.json
-!appsettings.Staging.json
-!appsettings.Production.json
+!appsettings.Development.example.json
+!appsettings.Local.example.json
 secrets.json
 *.env
 infrastructure/.env

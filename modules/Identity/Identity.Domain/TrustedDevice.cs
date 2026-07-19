@@ -29,6 +29,25 @@ public class TrustedDevice : Entity
         IsActive = true;
     }
 
+    public static TrustedDevice Rehydrate(
+        Guid id,
+        Guid userId,
+        string deviceId,
+        string deviceFingerprint,
+        DateTime registeredAt,
+        bool isActive)
+    {
+        return new TrustedDevice
+        {
+            Id = id,
+            UserId = userId,
+            DeviceId = deviceId,
+            DeviceFingerprint = deviceFingerprint,
+            RegisteredAt = registeredAt,
+            IsActive = isActive
+        };
+    }
+
     public void Deactivate()
     {
         IsActive = false;

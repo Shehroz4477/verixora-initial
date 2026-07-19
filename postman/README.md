@@ -1,5 +1,7 @@
 # Verixora Postman suite
 
-Import the collection and the Local environment into Postman. Run **Authentication** in order before the authenticated **Homes** folder. The collection stores its JWT and created IDs in collection variables.
+Import the collection and **Verixora Local** environment, then run folders in numeric order. Set a unique `phoneNumber`, a strong test `password`, `deviceId`, and `deviceFingerprint` before registration.
 
-Every implemented endpoint must have: a success case, validation/negative case where applicable, authorization test, and Postman assertions. The collection grows with the API; it is a tracked test artifact, not a one-time export.
+OTP codes are deliberately never returned by API responses. For local development only, copy each code from the API console into its matching collection variable; use real SMS/email delivery in every non-development environment. The suite includes success, device-binding, invalid-OTP, authorization, and email/web-login regression cases for the endpoints implemented so far.
+
+The local API profile listens on `http://localhost:5166`; copy [the local API example configuration](../api-host/ApiHost/appsettings.Local.example.json) to `appsettings.Local.json`, set the local secrets, then run the API.

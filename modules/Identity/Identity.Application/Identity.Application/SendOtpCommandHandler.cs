@@ -13,7 +13,7 @@ public class SendOtpCommandHandler : IRequestHandler<SendOtpCommand, SendOtpResu
 
     public async Task<SendOtpResult> Handle(SendOtpCommand request, CancellationToken cancellationToken)
     {
-        await _otpService.SendOtpAsync(request.PhoneNumber);
+        await _otpService.SendRegistrationOtpAsync(request.PhoneNumber);
         return new SendOtpResult(true, "OTP sent successfully.");
     }
 }

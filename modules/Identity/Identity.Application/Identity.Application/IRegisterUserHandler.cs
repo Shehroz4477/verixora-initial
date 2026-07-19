@@ -7,6 +7,8 @@ public record RegisterUserCommand(
     string Password,
     string ConfirmPassword,
     string Otp,
+    string DeviceId,
+    string DeviceFingerprint,
     string? Email = null
 ) : IRequest<RegisterUserResult>;
 

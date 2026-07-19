@@ -26,4 +26,8 @@ public class MockEmailOtpService : IEmailOtpService
         }
         return Task.FromResult(false);
     }
+
+    public Task SendEmailVerificationOtpAsync(string email) => SendEmailOtpAsync(email);
+
+    public Task<bool> ValidateEmailVerificationOtpAsync(string email, string otp) => ValidateEmailOtpAsync(email, otp);
 }

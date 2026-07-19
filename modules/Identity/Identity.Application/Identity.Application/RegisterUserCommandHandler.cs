@@ -20,12 +20,15 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
     public async Task<RegisterUserResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         // Validate OTP
-        if (!await _otpService.ValidateOtpAsync(request.PhoneNumber, request.Otp))
+        if (!await _otpService.ValidateRegistrationOtpAsync(request.PhoneNumber, request.Otp))
             throw new DomainException("Invalid or expired OTP.");
 
         // Validate password match
         if (request.Password != request.ConfirmPassword)
             throw new DomainException("Passwords do not match.");
+
+        if (string.IsNullOrWhiteSpace(request.DeviceId) || string.IsNullOrWhiteSpace(request.DeviceFingerprint))
+            throw new DomainException("A device binding is required to register an account.");
 
         // Check uniqueness of phone number
         if (await _userRepository.PhoneNumberExistsAsync(request.PhoneNumber, cancellationToken))
@@ -40,6 +43,8 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         // Set email if provided
         if (!string.IsNullOrWhiteSpace(request.Email))
             user.SetEmail(request.Email);
+
+        user.RegisterTrustedDevice(request.DeviceId.Trim(), request.DeviceFingerprint.Trim());
 
         // Save
         await _userRepository.AddAsync(user, cancellationToken);

@@ -7,12 +7,12 @@ namespace Identity.Application;
 public class SendEmailVerificationCommandHandler : IRequestHandler<SendEmailVerificationCommand, SendEmailVerificationResult>
 {
     private readonly IUserRepository _userRepository;
-    private readonly IEmailService _emailService;
+    private readonly IEmailOtpService _emailOtpService;
 
-    public SendEmailVerificationCommandHandler(IUserRepository userRepository, IEmailService emailService)
+    public SendEmailVerificationCommandHandler(IUserRepository userRepository, IEmailOtpService emailOtpService)
     {
         _userRepository = userRepository;
-        _emailService = emailService;
+        _emailOtpService = emailOtpService;
     }
 
     public async Task<SendEmailVerificationResult> Handle(SendEmailVerificationCommand request, CancellationToken cancellationToken)
@@ -27,8 +27,7 @@ public class SendEmailVerificationCommandHandler : IRequestHandler<SendEmailVeri
         if (user.EmailVerified)
             return new SendEmailVerificationResult(false, "Email already verified.");
 
-        // In a real system, store a code per user; mock will just use "123456"
-        await _emailService.SendVerificationCodeAsync(user.Email, "123456");
+        await _emailOtpService.SendEmailVerificationOtpAsync(user.Email);
 
         return new SendEmailVerificationResult(true, "Verification code sent to email.");
     }

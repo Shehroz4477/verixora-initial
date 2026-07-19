@@ -1,6 +1,8 @@
 using BuildingBlocks.Domain;
 using Identity.Domain;
 using MediatR;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Identity.Application;
 
@@ -26,7 +28,18 @@ public class SendLoginOtpCommandHandler : IRequestHandler<SendLoginOtpCommand, S
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new DomainException("Invalid phone number or password.");
 
-        await _otpService.SendOtpAsync(request.PhoneNumber);
+        var registered = user.TrustedDevice;
+        if (registered is not { IsActive: true } ||
+            !FixedTimeEquals(registered.DeviceId, request.DeviceId) ||
+            !FixedTimeEquals(registered.DeviceFingerprint, request.DeviceFingerprint))
+        {
+            throw new DomainException("This account can only be used from its registered mobile device.");
+        }
+
+        await _otpService.SendLoginOtpAsync(request.PhoneNumber);
         return new SendLoginOtpResult(true, "OTP sent to phone.");
     }
+
+    private static bool FixedTimeEquals(string expected, string actual)
+        => CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(actual ?? string.Empty));
 }

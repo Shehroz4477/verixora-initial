@@ -25,4 +25,16 @@ public class FaceEmbedding : Entity
         IV = iv ?? throw new ArgumentNullException(nameof(iv));
         CreatedAt = DateTime.UtcNow;
     }
+
+    public static FaceEmbedding Rehydrate(Guid id, Guid userId, byte[] ciphertext, byte[] iv, DateTime createdAt)
+    {
+        return new FaceEmbedding
+        {
+            Id = id,
+            UserId = userId,
+            EmbeddingCiphertext = ciphertext,
+            IV = iv,
+            CreatedAt = createdAt
+        };
+    }
 }

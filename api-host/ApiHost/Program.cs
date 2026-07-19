@@ -19,17 +19,17 @@ using Homes.Infrastructure;
 using Homes.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 // ---------------------------
 // Database Provider config
 // ---------------------------
-var databaseProvider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=verixora.db";
-
 // ---------------------------
 // JWT Authentication
 // ---------------------------
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "ThisIsASecretKeyForDevelopmentOnlyChangeInProduction!";
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+    throw new InvalidOperationException("Jwt:Key must be supplied from secret configuration and contain at least 32 characters.");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "Verixora";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
