@@ -14,11 +14,14 @@ public class EfAuditLogRepository : IAuditLogRepository
     }
 
     public async Task AddAsync(AuditLog log, CancellationToken cancellationToken = default)
-        => await _context.AuditLogs.AddAsync(log, cancellationToken);
+    {
+        await _context.AuditLogs.AddAsync(log, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 
     public async Task<List<AuditLog>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default)
-        // HomeId is not stored directly; we'd join via Devices/SmartLocks. For demo, return all.
         => await _context.AuditLogs
+            .Where(log => log.HomeId == homeId)
             .OrderByDescending(l => l.Timestamp)
             .Take(100)
             .ToListAsync(cancellationToken);

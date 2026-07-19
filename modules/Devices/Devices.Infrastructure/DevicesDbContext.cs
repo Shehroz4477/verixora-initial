@@ -12,18 +12,20 @@ public class DevicesDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("devices");
+        var isPostgreSql = Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL";
 
         modelBuilder.Entity<Device>(entity =>
         {
-            entity.HasKey(d => d.Id);
-            entity.Property(d => d.Name).IsRequired().HasMaxLength(100);
-            entity.Property(d => d.HomeId).IsRequired();
-            entity.Property(d => d.MqttTopic).IsRequired().HasMaxLength(256);
-            entity.Property(d => d.Status)
-                  .IsRequired()
-                  .HasConversion<string>()
-                  .HasMaxLength(20);
-            entity.Property(d => d.CreatedAt).IsRequired();
+            entity.ToTable(isPostgreSql ? "devices" : "Devices");
+            entity.HasKey(device => device.Id);
+            entity.Property(device => device.Id).HasColumnName(isPostgreSql ? "id" : "Id");
+            entity.Property(device => device.Name).HasColumnName(isPostgreSql ? "name" : "Name").IsRequired().HasMaxLength(100);
+            entity.Property(device => device.HomeId).HasColumnName(isPostgreSql ? "home_id" : "HomeId").IsRequired();
+            entity.Property(device => device.HardwareId).HasColumnName(isPostgreSql ? "hardware_id" : "HardwareId").IsRequired().HasMaxLength(128);
+            entity.HasIndex(device => device.HardwareId).IsUnique();
+            entity.Property(device => device.MqttTopic).HasColumnName(isPostgreSql ? "mqtt_topic" : "MqttTopic").IsRequired().HasMaxLength(256);
+            entity.Property(device => device.Status).HasColumnName(isPostgreSql ? "status" : "Status").IsRequired().HasConversion<string>().HasMaxLength(20);
+            entity.Property(device => device.CreatedAt).HasColumnName(isPostgreSql ? "created_at_utc" : "CreatedAtUtc").IsRequired();
         });
     }
 }

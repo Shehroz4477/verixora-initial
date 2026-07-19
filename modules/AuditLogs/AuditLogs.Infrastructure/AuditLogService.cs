@@ -13,9 +13,9 @@ public class AuditLogService : IAuditLogService
         _mediator = mediator;
     }
 
-    public async Task LogAsync(Guid deviceId, Guid userId, string action, bool result, string? details = null)
+    public async Task LogAsync(Guid homeId, Guid deviceId, Guid userId, string action, bool result, string? details = null)
     {
-        var command = new LogAuditCommand(deviceId, userId, action, result, details);
+        var command = new LogAuditCommand(homeId, deviceId, userId, action, result, details);
         await _mediator.Send(command);
     }
 }

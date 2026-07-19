@@ -1,7 +1,12 @@
 using Authorization.Domain;
 using BuildingBlocks.Domain;
+using Devices.Application;
+using Devices.Domain;
 using FaceVerification.Domain;
+using Homes.Application;
 using MediatR;
+using SmartLocks.Domain;
+using System.Text.Json;
 
 namespace SmartLocks.Application;
 
@@ -12,63 +17,113 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
     private readonly IFaceVerificationProvider _faceProvider;
     private readonly IMqttPublisher _mqttPublisher;
     private readonly IAuditLogService _auditLogService;
+    private readonly IDeviceRepository _deviceRepository;
+    private readonly IHomeRepository _homeRepository;
 
     public UnlockDoorCommandHandler(
         ISmartLockRepository lockRepository,
         IAuthorizationService authService,
         IFaceVerificationProvider faceProvider,
         IMqttPublisher mqttPublisher,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        IDeviceRepository deviceRepository,
+        IHomeRepository homeRepository)
     {
         _lockRepository = lockRepository;
         _authService = authService;
         _faceProvider = faceProvider;
         _mqttPublisher = mqttPublisher;
         _auditLogService = auditLogService;
+        _deviceRepository = deviceRepository;
+        _homeRepository = homeRepository;
     }
 
     public async Task<UnlockDoorResult> Handle(UnlockDoorCommand request, CancellationToken cancellationToken)
     {
+        if (request.UserId == Guid.Empty)
+            throw new DomainException("An authenticated user is required.");
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey) || request.IdempotencyKey.Length > 128)
+            throw new DomainException("A valid idempotency key is required.");
+
         var smartLock = await _lockRepository.GetByIdAsync(request.LockId, cancellationToken);
         if (smartLock is null)
             throw new DomainException("Smart lock not found.");
+        if (smartLock.Status == LockStatus.EmergencyLocked)
+            throw new DomainException("This door is emergency-locked and cannot be remotely unlocked.");
 
-        // 1. Authorization check
-        if (!await _authService.CanUnlockAsync(request.UserId, request.LockId, smartLock.HomeId, request.UserRole, cancellationToken))
+        var device = await _deviceRepository.GetByIdAsync(smartLock.DeviceId, cancellationToken);
+        if (device is null || device.HomeId != smartLock.HomeId)
+            throw new DomainException("The lock controller is not valid for this home.");
+        if (device.Status != DeviceStatus.Online)
         {
-            await _auditLogService.LogAsync(request.LockId, request.UserId, "Unlock", false, "Authorization failed");
+            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Controller is offline or not securely provisioned");
+            throw new DomainException("The controller is not online. Use the local mechanical override if immediate access is required.");
+        }
+
+        var isSystemAdmin = string.Equals(request.UserRole, "SystemAdmin", StringComparison.Ordinal);
+        var homeMembership = isSystemAdmin
+            ? null
+            : (await _homeRepository.GetForUserAsync(request.UserId, cancellationToken))
+                .SingleOrDefault(home => home.Id == smartLock.HomeId);
+        if (!isSystemAdmin && homeMembership is null)
+        {
+            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "User is not a home member");
+            throw new DomainException("You do not have access to this home.");
+        }
+
+        var accessRole = isSystemAdmin ? "SystemAdmin" : homeMembership!.Role;
+        if (!await _authService.CanUnlockAsync(request.UserId, request.LockId, smartLock.HomeId, accessRole, cancellationToken))
+        {
+            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Authorization failed");
             throw new DomainException("Access denied by authorization policy.");
         }
 
-        // 2. Face verification if required
         if (smartLock.RequiresFace)
         {
             if (request.FaceImageStream is null)
             {
-                await _auditLogService.LogAsync(request.LockId, request.UserId, "Unlock", false, "Face image required");
+                await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Face image required");
                 throw new DomainException("Face verification required but no image provided.");
             }
 
-            var faceMatch = await _faceProvider.VerifyAsync(request.UserId, request.FaceImageStream, cancellationToken);
+            bool faceMatch;
+            try
+            {
+                faceMatch = await _faceProvider.VerifyAsync(request.UserId, request.FaceImageStream, cancellationToken);
+            }
+            catch (Exception)
+            {
+                await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Face verification service unavailable");
+                throw new DomainException("Face verification is temporarily unavailable; the door remains locked.");
+            }
+
             if (!faceMatch)
             {
-                await _auditLogService.LogAsync(request.LockId, request.UserId, "Unlock", false, "Face mismatch");
+                await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Face mismatch");
                 throw new DomainException("Face verification failed.");
             }
         }
 
-        // 3. Perform unlock
-        smartLock.Unlock(request.UserId);
-        await _lockRepository.UpdateAsync(smartLock, cancellationToken);
+        // Broker acceptance does not prove a physical unlock. The state change belongs to the
+        // controller acknowledgement workflow, so an outage cannot create a false unlock record.
+        var payload = JsonSerializer.Serialize(new
+        {
+            command = "unlock",
+            lockId = smartLock.Id,
+            commandId = request.IdempotencyKey,
+            requestedAtUtc = DateTime.UtcNow
+        });
+        try
+        {
+            await _mqttPublisher.PublishAsync($"{device.MqttTopic}/commands", payload);
+        }
+        catch (Exception)
+        {
+            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "MQTT broker rejected command");
+            throw new DomainException("The unlock command could not be queued. The door remains locked.");
+        }
 
-        // 4. Send MQTT command
-        // Need device's MQTT topic – we'll get it via a new method or repository; for now assume we have DeviceRepository
-        // We'll add a helper later; for now publish to a fixed topic based on lock.DeviceId
-        await _mqttPublisher.PublishAsync($"verixora/{smartLock.DeviceId}", "{\"cmd\":\"unlock\"}");
-
-        // 5. Audit log
-        await _auditLogService.LogAsync(request.LockId, request.UserId, "Unlock", true, "Door unlocked successfully");
-
-        return new UnlockDoorResult(true, "Door unlocked.");
+        await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", true, "Command accepted by MQTT broker; awaiting controller acknowledgement");
+        return new UnlockDoorResult(true, "Unlock command queued. The controller acknowledgement is pending.");
     }
 }

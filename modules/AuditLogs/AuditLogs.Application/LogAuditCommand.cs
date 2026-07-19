@@ -3,6 +3,7 @@ using MediatR;
 namespace AuditLogs.Application;
 
 public record LogAuditCommand(
+    Guid HomeId,
     Guid DeviceId,
     Guid UserId,
     string Action,

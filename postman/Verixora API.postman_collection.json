@@ -18,7 +18,10 @@
     { "key": "webLoginOtp", "value": "" },
     { "key": "accessToken", "value": "" },
     { "key": "userId", "value": "" },
-    { "key": "homeId", "value": "" }
+    { "key": "homeId", "value": "" },
+    { "key": "controllerHardwareId", "value": "replace-with-the-controller-QR-hardware-id" },
+    { "key": "smartLockId", "value": "" },
+    { "key": "unlockIdempotencyKey", "value": "replace-with-a-new-uuid-per-unlock" }
   ],
   "item": [
     {
@@ -107,7 +110,37 @@
       ]
     },
     {
-      "name": "04 Security regression",
+      "name": "04 Controllers",
+      "item": [
+        {
+          "name": "Register pending ESP32 controller",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/devices", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"homeId\": \"{{homeId}}\",\n  \"name\": \"Front Door ESP32\",\n  \"hardwareId\": \"{{controllerHardwareId}}\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('Controller remains pending secure provisioning', () => pm.expect(body.status).to.equal('Pending'));", "pm.test('Controller topic is assigned', () => pm.expect(body.mqttTopic).to.match(/^verixora\\//));", "pm.collectionVariables.set('deviceId', body.deviceId);"] } }]
+        },
+        {
+          "name": "Reject controller for an unauthorized home",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/devices", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"homeId\": \"00000000-0000-0000-0000-000000000000\", \"name\": \"Unauthorized ESP32\", \"hardwareId\": \"unowned-controller-id\" }" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Unauthorized home registration is rejected', () => pm.expect(pm.response.code).to.equal(400));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "05 Door locks and audit trail",
+      "item": [
+        {
+          "name": "Reject lock registration until controller provisioning completes",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/locks", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"homeId\": \"{{homeId}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"name\": \"Front Door\",\n  \"requiresFace\": true\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Pending controller cannot be assigned to a door', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Error does not activate or expose controller credentials', () => pm.expect(pm.response.text()).to.not.include('certificate'));"] } }]
+        },
+        {
+          "name": "Get owner-scoped audit trail",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/auditlogs?homeId={{homeId}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Owner can read its own audit trail', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Audit response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "06 Security regression",
       "item": [
         {
           "name": "Reject anonymous device registration",

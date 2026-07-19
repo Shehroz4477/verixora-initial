@@ -1,4 +1,5 @@
 using Authorization.Domain;
+using BuildingBlocks.Infrastructure;
 using FaceVerification.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,39 +15,40 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var provider = configuration["DatabaseProvider"] ?? "Sqlite";
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Data Source=verixora.db";
+        var mode = Enum.TryParse<DataAccessMode>(configuration["DataAccess:Mode"], ignoreCase: true, out var configuredMode)
+            ? configuredMode
+            : DataAccessMode.DapperStoredProcedure;
 
-        // Register EF Core DbContext
-        services.AddDbContext<SmartLocksDbContext>(options =>
+        if (mode == DataAccessMode.EfCore)
         {
-            _ = provider switch
-            {
-                "SqlServer" => options.UseSqlServer(connectionString),
-                "MySql" => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)),
-                "PostgreSql" => options.UseNpgsql(connectionString),
-                "Sqlite" => options.UseSqlite(connectionString),
-                _ => throw new NotSupportedException($"Database provider '{provider}' is not supported.")
-            };
+            var provider = configuration["DatabaseProvider"] ?? throw new InvalidOperationException("DatabaseProvider is required.");
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
 
-            bool.TryParse(configuration["LogSql"], out var logSql);
-            if (logSql)
+            services.AddDbContext<SmartLocksDbContext>(options =>
             {
-                options.LogTo(Console.WriteLine, LogLevel.Information);
-            }
-        });
+                _ = provider switch
+                {
+                    "SqlServer" => options.UseSqlServer(connectionString),
+                    "PostgreSql" => options.UseNpgsql(connectionString),
+                    _ => throw new NotSupportedException($"Database provider '{provider}' is not supported for this module.")
+                };
 
-        // Choose EF or ADO.NET repository based on config
-        bool.TryParse(configuration["UseEfCore"], out var useEf);
-        if (useEf || string.IsNullOrWhiteSpace(configuration["UseEfCore"]))
-        {
+                if (bool.TryParse(configuration["LogSql"], out var logSql) && logSql)
+                    options.LogTo(Console.WriteLine, LogLevel.Information);
+            });
             services.AddScoped<ISmartLockRepository, EfSmartLockRepository>();
         }
         else
         {
-            services.AddSingleton<BuildingBlocks.Infrastructure.DbConnectionFactory>();
-            services.AddScoped<ISmartLockRepository, AdoSmartLockRepository>();
+            services.AddSingleton<DbConnectionFactory>();
+            _ = mode switch
+            {
+                DataAccessMode.DapperStoredProcedure => services.AddScoped<ISmartLockRepository, DapperSmartLockRepository>(),
+                DataAccessMode.AdoNetStoredProcedure => services.AddScoped<ISmartLockRepository, AdoSmartLockRepository>(),
+                _ => throw new NotSupportedException($"Data access mode '{mode}' is not supported.")
+            };
         }
 
         // MQTT Publisher (singleton – one connection per app)

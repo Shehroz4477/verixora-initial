@@ -6,6 +6,7 @@ public record RegisterSmartLockCommand(
     string Name,
     Guid DeviceId,
     Guid HomeId,
+    Guid RequestedBy,
     bool RequiresFace = false
 ) : IRequest<RegisterSmartLockResult>;
 

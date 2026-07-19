@@ -14,7 +14,7 @@ public class LogAuditCommandHandler : IRequestHandler<LogAuditCommand>
 
     public async Task Handle(LogAuditCommand request, CancellationToken cancellationToken)
     {
-        var log = new AuditLog(request.UserId, request.DeviceId, request.Action, request.Result, request.Details);
+        var log = new AuditLog(request.HomeId, request.UserId, request.DeviceId, request.Action, request.Result, request.Details);
         await _repository.AddAsync(log, cancellationToken);
     }
 }

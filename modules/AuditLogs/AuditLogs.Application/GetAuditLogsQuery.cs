@@ -3,4 +3,4 @@ using MediatR;
 
 namespace AuditLogs.Application;
 
-public record GetAuditLogsQuery(Guid HomeId) : IRequest<List<AuditLog>>;
+public record GetAuditLogsQuery(Guid HomeId, Guid RequestedBy, bool IsSystemAdmin) : IRequest<List<AuditLog>>;

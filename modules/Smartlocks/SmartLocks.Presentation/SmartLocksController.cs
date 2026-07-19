@@ -21,10 +21,11 @@ public class SmartLocksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> RegisterSmartLock([FromBody] RegisterSmartLockCommand command)
+    public async Task<IActionResult> RegisterSmartLock([FromBody] RegisterSmartLockRequest request)
     {
         try
         {
+            var command = new RegisterSmartLockCommand(request.Name, request.DeviceId, request.HomeId, GetUserIdFromToken(), request.RequiresFace);
             var result = await _mediator.Send(command);
             return Ok(result);
         }
@@ -75,3 +76,5 @@ public class UnlockRequest
     public IFormFile? FaceImage { get; set; }
     public string? IdempotencyKey { get; set; }
 }
+
+public sealed record RegisterSmartLockRequest(string Name, Guid DeviceId, Guid HomeId, bool RequiresFace = false);

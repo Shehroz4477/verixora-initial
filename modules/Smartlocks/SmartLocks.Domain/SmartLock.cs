@@ -20,12 +20,40 @@ public class SmartLock : Entity, IAggregateRoot
 
     public SmartLock(string name, Guid deviceId, Guid homeId, bool requiresFace = false) : this()
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Lock name is required.");
+        if (deviceId == Guid.Empty || homeId == Guid.Empty)
+            throw new DomainException("A controller and home are required.");
+
         Id = Guid.NewGuid();
-        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Name = name.Trim();
         DeviceId = deviceId;
         HomeId = homeId;
         RequiresFace = requiresFace;
         Status = LockStatus.Locked;
+    }
+
+    public static SmartLock Rehydrate(
+        Guid id,
+        string name,
+        Guid deviceId,
+        Guid homeId,
+        LockStatus status,
+        bool requiresFace,
+        DateTime? lastUnlockedAt,
+        Guid? lastUnlockedBy)
+    {
+        return new SmartLock
+        {
+            Id = id,
+            Name = name,
+            DeviceId = deviceId,
+            HomeId = homeId,
+            Status = status,
+            RequiresFace = requiresFace,
+            LastUnlockedAt = lastUnlockedAt,
+            LastUnlockedBy = lastUnlockedBy
+        };
     }
 
     public void Unlock(Guid userId)

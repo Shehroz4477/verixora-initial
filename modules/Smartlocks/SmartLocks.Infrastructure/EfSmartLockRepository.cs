@@ -17,11 +17,14 @@ public class EfSmartLockRepository : ISmartLockRepository
         => await _context.SmartLocks.FindAsync(new object[] { lockId }, cancellationToken);
 
     public async Task AddAsync(SmartLock smartLock, CancellationToken cancellationToken = default)
-        => await _context.SmartLocks.AddAsync(smartLock, cancellationToken);
+    {
+        await _context.SmartLocks.AddAsync(smartLock, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 
     public Task UpdateAsync(SmartLock smartLock, CancellationToken cancellationToken = default)
     {
         _context.SmartLocks.Update(smartLock);
-        return Task.CompletedTask;
+        return _context.SaveChangesAsync(cancellationToken);
     }
 }

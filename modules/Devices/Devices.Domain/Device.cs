@@ -6,6 +6,7 @@ public class Device : Entity, IAggregateRoot
 {
     public string Name { get; private set; }
     public Guid HomeId { get; private set; }
+    public string HardwareId { get; private set; }
     public string MqttTopic { get; private set; }
     public DeviceStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -14,17 +15,45 @@ public class Device : Entity, IAggregateRoot
     private Device()
     {
         Name = null!;
+        HardwareId = null!;
         MqttTopic = null!;
     }
 
-    public Device(string name, Guid homeId) : this()
+    public Device(string name, Guid homeId, string hardwareId) : this()
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Device name is required.");
+        if (string.IsNullOrWhiteSpace(hardwareId))
+            throw new DomainException("Hardware ID is required.");
+
         Id = Guid.NewGuid();
-        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Name = name.Trim();
         HomeId = homeId;
+        HardwareId = hardwareId.Trim().ToUpperInvariant();
         MqttTopic = $"verixora/{Id}";
         Status = DeviceStatus.Pending;
         CreatedAt = DateTime.UtcNow;
+    }
+
+    public static Device Rehydrate(
+        Guid id,
+        Guid homeId,
+        string hardwareId,
+        string name,
+        string mqttTopic,
+        DeviceStatus status,
+        DateTime createdAt)
+    {
+        return new Device
+        {
+            Id = id,
+            HomeId = homeId,
+            HardwareId = hardwareId,
+            Name = name,
+            MqttTopic = mqttTopic,
+            Status = status,
+            CreatedAt = createdAt
+        };
     }
 
     public void Activate() => Status = DeviceStatus.Active;
