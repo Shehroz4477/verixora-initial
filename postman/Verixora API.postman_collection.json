@@ -1,0 +1,38 @@
+{
+  "info": { "_postman_id": "8a10b7dc-6906-4a67-b120-6f7c0c1dfc25", "name": "Verixora API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:5001/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "homeId", "value": "" },
+    { "key": "deviceId", "value": "" },
+    { "key": "lockId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        { "name": "Send registration OTP", "request": { "method": "POST", "url": "{{baseUrl}}/auth/send-otp", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"+923001234567\"\n}" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('OTP request succeeds', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Response is JSON', () => pm.response.to.be.json);"] } }] },
+        { "name": "Register user", "request": { "method": "POST", "url": "{{baseUrl}}/auth/register", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"+923001234567\",\n  \"password\": \"ChangeMe123!\",\n  \"confirmPassword\": \"ChangeMe123!\",\n  \"otp\": \"123456\"\n}" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "if (body.userId) pm.collectionVariables.set('userId', body.userId);"] } }] },
+        { "name": "Send login OTP", "request": { "method": "POST", "url": "{{baseUrl}}/auth/send-login-otp", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"+923001234567\",\n  \"password\": \"ChangeMe123!\"\n}" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Login OTP request succeeds', () => pm.expect(pm.response.code).to.equal(200));"] } }] },
+        { "name": "Login", "request": { "method": "POST", "url": "{{baseUrl}}/auth/login", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"+923001234567\",\n  \"password\": \"ChangeMe123!\",\n  \"otp\": \"123456\"\n}" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Login succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('JWT is returned', () => pm.expect(body.token).to.be.a('string').and.not.empty);", "pm.collectionVariables.set('accessToken', body.token);", "pm.collectionVariables.set('userId', body.userId);"] } }] },
+        { "name": "Reject invalid OTP", "request": { "method": "POST", "url": "{{baseUrl}}/auth/login", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"+923001234567\",\n  \"password\": \"ChangeMe123!\",\n  \"otp\": \"000000\"\n}" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Invalid OTP is rejected', () => pm.expect(pm.response.code).to.equal(400));"] } }] }
+      ]
+    },
+    {
+      "name": "Homes",
+      "item": [
+        { "name": "Create home", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/homes", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"name\": \"Main Home\" }" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Home is created', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "if (body.id) pm.collectionVariables.set('homeId', body.id);"] } }] },
+        { "name": "Get my homes", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/homes" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Homes request succeeds', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"] } }] },
+        { "name": "Reject anonymous homes request", "request": { "method": "GET", "url": "{{baseUrl}}/homes" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Anonymous request is rejected', () => pm.expect(pm.response.code).to.equal(401));"] } }] }
+      ]
+    },
+    {
+      "name": "Security regression",
+      "item": [
+        { "name": "Reject anonymous device registration", "request": { "method": "POST", "url": "{{baseUrl}}/devices", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"homeId\": \"00000000-0000-0000-0000-000000000000\", \"name\": \"Unauthorized Device\" }" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Protected devices API rejects anonymous callers', () => pm.expect(pm.response.code).to.equal(401));"] } }] },
+        { "name": "Reject anonymous lock registration", "request": { "method": "POST", "url": "{{baseUrl}}/locks", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" } }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Protected locks API rejects anonymous callers', () => pm.expect(pm.response.code).to.equal(401));"] } }] }
+      ]
+    }
+  ]
+}

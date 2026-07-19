@@ -17,6 +17,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{D4
 		database\sqlserver\001_homes.sql = database\sqlserver\001_homes.sql
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "postman", "postman", "{32B92054-09D1-4A6D-8B5A-3340D164A086}"
+	ProjectSection(SolutionItems) = preProject
+		postman\README.md = postman\README.md
+		postman\Verixora API.postman_collection.json = postman\Verixora API.postman_collection.json
+		postman\Verixora Local.postman_environment.json = postman\Verixora Local.postman_environment.json
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "building-blocks", "building-blocks", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildingBlocks.Domain", "BuildingBlocks.Domain", "{B862D875-1934-4E2F-A55B-77F5B563ABDE}"
