@@ -65,10 +65,34 @@ public sealed class SmartLockSecurityHandlerTests
         Assert.Equal("UnlockCommand", eventEntry.Action);
     }
 
+    [Fact]
+    public async Task Owner_can_read_locks_only_for_an_authorized_home()
+    {
+        var ownerId = Guid.NewGuid();
+        var homeId = Guid.NewGuid();
+        var controller = new Device("Front Door ESP32", homeId, "ESP32-TEST-3");
+        controller.Activate();
+        var smartLock = new SmartLock("Front Door", controller.Id, homeId, requiresFace: true);
+        var handler = new GetSmartLocksForHomeQueryHandler(
+            new InMemorySmartLockRepository(smartLock),
+            new InMemoryDeviceRepository(controller),
+            new FixedHomeRepository(new HomeSummary(homeId, "Main Home", ownerId, "Owner", 20, DateTime.UtcNow)));
+
+        var result = await handler.Handle(
+            new GetSmartLocksForHomeQuery(homeId, ownerId, false),
+            TestContext.Current.CancellationToken);
+
+        var summary = Assert.Single(result);
+        Assert.Equal(smartLock.Id, summary.Id);
+        Assert.Equal("Active", summary.ControllerStatus);
+        Assert.True(summary.RequiresFace);
+    }
+
     private sealed class InMemorySmartLockRepository(params SmartLock[] locks) : ISmartLockRepository
     {
         private readonly List<SmartLock> _locks = locks.ToList();
         public Task<SmartLock?> GetByIdAsync(Guid lockId, CancellationToken cancellationToken = default) => Task.FromResult(_locks.SingleOrDefault(lockItem => lockItem.Id == lockId));
+        public Task<List<SmartLock>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default) => Task.FromResult(_locks.Where(lockItem => lockItem.HomeId == homeId).ToList());
         public Task AddAsync(SmartLock smartLock, CancellationToken cancellationToken = default) { _locks.Add(smartLock); return Task.CompletedTask; }
         public Task UpdateAsync(SmartLock smartLock, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }

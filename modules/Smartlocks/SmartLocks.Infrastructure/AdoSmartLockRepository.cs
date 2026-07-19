@@ -25,6 +25,25 @@ public sealed class AdoSmartLockRepository(DbConnectionFactory connectionFactory
         return await reader.ReadAsync(cancellationToken) ? Map(reader).ToDomain() : null;
     }
 
+    public async Task<List<SmartLock>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = connectionFactory.Provider switch
+        {
+            "SqlServer" => "smartlocks.sp_GetSmartLocksForHome",
+            "PostgreSql" => PostgreSqlSelectForHome(),
+            _ => throw UnsupportedProvider()
+        };
+        command.CommandType = connectionFactory.Provider == "SqlServer" ? CommandType.StoredProcedure : CommandType.Text;
+        Add(command, "HomeId", homeId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var locks = new List<SmartLock>();
+        while (await reader.ReadAsync(cancellationToken)) locks.Add(Map(reader).ToDomain());
+        return locks;
+    }
+
     public Task AddAsync(SmartLock smartLock, CancellationToken cancellationToken = default)
         => SaveAsync("smartlocks.sp_CreateSmartLock", "select * from smartlocks.fn_create_smart_lock(@Id, @DeviceId, @HomeId, @Name, @Status, @RequiresFace)", smartLock, isUpdate: false, cancellationToken: cancellationToken);
 
@@ -74,6 +93,9 @@ public sealed class AdoSmartLockRepository(DbConnectionFactory connectionFactory
 
     private static string PostgreSqlSelect(string routine)
         => $"select id as \"Id\", device_id as \"DeviceId\", home_id as \"HomeId\", name as \"Name\", status as \"Status\", requires_face as \"RequiresFace\", last_unlocked_at_utc as \"LastUnlockedAtUtc\", last_unlocked_by as \"LastUnlockedBy\" from {routine}(@Id)";
+
+    private static string PostgreSqlSelectForHome()
+        => "select id as \"Id\", device_id as \"DeviceId\", home_id as \"HomeId\", name as \"Name\", status as \"Status\", requires_face as \"RequiresFace\", last_unlocked_at_utc as \"LastUnlockedAtUtc\", last_unlocked_by as \"LastUnlockedBy\" from smartlocks.fn_get_smart_locks_for_home(@HomeId)";
 
     private static DateTime? NullableDateTime(DbDataReader reader, string name)
     {

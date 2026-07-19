@@ -35,6 +35,19 @@ public class SmartLocksController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetForHome([FromQuery] Guid homeId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _mediator.Send(new GetSmartLocksForHomeQuery(homeId, GetUserIdFromToken(), string.Equals(GetUserRoleFromToken(), "SystemAdmin", StringComparison.Ordinal)), cancellationToken));
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
     [HttpPost("{lockId:guid}/unlock")]
     public async Task<IActionResult> Unlock(Guid lockId, [FromForm] UnlockRequest request)
     {

@@ -20,6 +20,18 @@ public sealed class DapperSmartLockRepository(DbConnectionFactory connectionFact
         return lockRow?.ToDomain();
     }
 
+    public async Task<List<SmartLock>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        var rows = connectionFactory.Provider switch
+        {
+            "SqlServer" => await connection.QueryAsync<PersistedSmartLock>(new CommandDefinition("smartlocks.sp_GetSmartLocksForHome", new { HomeId = homeId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
+            "PostgreSql" => await connection.QueryAsync<PersistedSmartLock>(new CommandDefinition(PostgreSqlSelectForHome(), new { HomeId = homeId }, cancellationToken: cancellationToken)),
+            _ => throw UnsupportedProvider()
+        };
+        return rows.Select(row => row.ToDomain()).ToList();
+    }
+
     public async Task AddAsync(SmartLock smartLock, CancellationToken cancellationToken = default)
     {
         await using var connection = connectionFactory.CreateConnection();
@@ -62,6 +74,9 @@ public sealed class DapperSmartLockRepository(DbConnectionFactory connectionFact
 
     private static string PostgreSqlSelect(string routine)
         => $"select id as \"Id\", device_id as \"DeviceId\", home_id as \"HomeId\", name as \"Name\", status as \"Status\", requires_face as \"RequiresFace\", last_unlocked_at_utc as \"LastUnlockedAtUtc\", last_unlocked_by as \"LastUnlockedBy\" from {routine}(@Id)";
+
+    private static string PostgreSqlSelectForHome()
+        => "select id as \"Id\", device_id as \"DeviceId\", home_id as \"HomeId\", name as \"Name\", status as \"Status\", requires_face as \"RequiresFace\", last_unlocked_at_utc as \"LastUnlockedAtUtc\", last_unlocked_by as \"LastUnlockedBy\" from smartlocks.fn_get_smart_locks_for_home(@HomeId)";
 
     private NotSupportedException UnsupportedProvider() => new($"Smart-lock routines are not available for '{connectionFactory.Provider}'.");
 }

@@ -16,6 +16,9 @@ public class EfSmartLockRepository : ISmartLockRepository
     public async Task<SmartLock?> GetByIdAsync(Guid lockId, CancellationToken cancellationToken = default)
         => await _context.SmartLocks.FindAsync(new object[] { lockId }, cancellationToken);
 
+    public async Task<List<SmartLock>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default)
+        => await _context.SmartLocks.Where(item => item.HomeId == homeId).ToListAsync(cancellationToken);
+
     public async Task AddAsync(SmartLock smartLock, CancellationToken cancellationToken = default)
     {
         await _context.SmartLocks.AddAsync(smartLock, cancellationToken);

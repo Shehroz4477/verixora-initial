@@ -120,6 +120,11 @@
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('Controller remains pending secure provisioning', () => pm.expect(body.status).to.equal('Pending'));", "pm.test('Controller topic is assigned', () => pm.expect(body.mqttTopic).to.match(/^verixora\\//));", "pm.test('Provisioning secret is returned only to the authenticated owner', () => pm.expect(body.provisioningToken).to.be.a('string').and.not.empty);", "pm.collectionVariables.set('deviceId', body.deviceId);", "pm.collectionVariables.set('controllerProvisioningToken', body.provisioningToken);"] } }]
         },
         {
+          "name": "Reject lock registration while controller is pending",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/locks", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"homeId\": \"{{homeId}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"name\": \"Front Door\",\n  \"requiresFace\": true\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Pending controller cannot be assigned to a door', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Controller credentials are not exposed', () => pm.expect(pm.response.text()).to.not.include('certificate'));" ] } }]
+        },
+        {
           "name": "Complete controller provisioning (local development only)",
           "request": { "method": "POST", "url": "{{baseUrl}}/devices/provisioning/complete", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"deviceId\": \"{{deviceId}}\",\n  \"provisioningToken\": \"{{controllerProvisioningToken}}\",\n  \"controllerPublicKeyPem\": \"{{controllerPublicKeyPem}}\",\n  \"hardwareAttestation\": \"local-development-only\"\n}" } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller provisioning succeeds only in explicit local development mode', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Controller becomes active', () => pm.expect(pm.response.json().status).to.equal('Active'));"] } }]
@@ -135,9 +140,19 @@
       "name": "05 Door locks and audit trail",
       "item": [
         {
-          "name": "Reject lock registration until controller provisioning completes",
+          "name": "Register lock after controller provisioning",
           "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/locks", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"homeId\": \"{{homeId}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"name\": \"Front Door\",\n  \"requiresFace\": true\n}" } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Pending controller cannot be assigned to a door', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Error does not activate or expose controller credentials', () => pm.expect(pm.response.text()).to.not.include('certificate'));"] } }]
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Securely provisioned controller can be assigned to one door', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.collectionVariables.set('smartLockId', body.smartLockId);"] } }]
+        },
+        {
+          "name": "Get locks for the owner home",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/locks?homeId={{homeId}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Owner can read only its home locks', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"] } }]
+        },
+        {
+          "name": "Reject remote unlock while controller is offline",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/locks/{{smartLockId}}/unlock", "body": { "mode": "formdata", "formdata": [{ "key": "idempotencyKey", "value": "{{unlockIdempotencyKey}}", "type": "text" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Offline controller does not unlock remotely', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Response instructs local override path', () => pm.expect(pm.response.json().error).to.include('controller is not online'));"] } }]
         },
         {
           "name": "Get owner-scoped audit trail",
