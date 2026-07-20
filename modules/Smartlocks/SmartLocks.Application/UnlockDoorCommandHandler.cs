@@ -124,7 +124,8 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             lockId = smartLock.Id,
             commandId = command.Id,
             requestedAtUtc = command.RequestedAtUtc,
-            expiresAtUtc = command.ExpiresAtUtc
+            expiresAtUtc = command.ExpiresAtUtc,
+            expiresAtUnixTimeSeconds = new DateTimeOffset(command.ExpiresAtUtc).ToUnixTimeSeconds()
         });
         try
         {

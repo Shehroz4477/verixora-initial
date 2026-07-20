@@ -54,3 +54,8 @@ docker-compose.override.yml
 # should never enter the repository.
 .DS_Store
 Thumbs.db
+
+# --- PlatformIO ---
+# Why: .pio contains locally generated firmware binaries, object files, and
+# downloaded libraries. PlatformIO recreates it from platformio.ini.
+**/.pio/

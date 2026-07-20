@@ -72,12 +72,13 @@ public sealed class AcknowledgeControllerCommandHandler(
         {
             var spki = Convert.FromBase64String(controllerPublicKeySpkiBase64);
             var signature = Convert.FromBase64String(request.SignatureBase64);
-            if (signature.Length != 64)
+            if (signature.Length is < 8 or > 144)
                 throw new DomainException("Controller acknowledgement signature is invalid.");
             using var key = ECDsa.Create();
             key.ImportSubjectPublicKeyInfo(spki, out _);
             var payload = Encoding.UTF8.GetBytes(CanonicalPayload(request.DeviceId, request.CommandId, request.Outcome, request.OccurredAtUtc, request.Nonce));
-            if (!key.VerifyData(payload, signature, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation))
+            var format = signature.Length == 64 ? DSASignatureFormat.IeeeP1363FixedFieldConcatenation : DSASignatureFormat.Rfc3279DerSequence;
+            if (!key.VerifyData(payload, signature, HashAlgorithmName.SHA256, format))
                 throw new DomainException("Controller acknowledgement signature is invalid.");
         }
         catch (FormatException) { throw new DomainException("Controller acknowledgement signature is invalid."); }
