@@ -49,6 +49,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options => options.AddPolicy("VerixoraWeb", policy =>
+{
+    if (allowedCorsOrigins.Length == 0)
+        throw new InvalidOperationException("Cors:AllowedOrigins must be configured.");
+    policy.WithOrigins(allowedCorsOrigins).AllowAnyHeader().AllowAnyMethod();
+}));
 
 builder.Services.AddScoped<IAuditLogService,AuditLogService>();
 
@@ -87,6 +94,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("VerixoraWeb");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
