@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>verixora-api-local-21c0cb1a-3b3d-4da6-a3d7-a15da55cf985</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

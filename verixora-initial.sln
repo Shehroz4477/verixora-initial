@@ -19,12 +19,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{D4
 		database\postgresql\004_smartlocks.sql = database\postgresql\004_smartlocks.sql
 		database\postgresql\005_auditlogs.sql = database\postgresql\005_auditlogs.sql
 		database\postgresql\006_controller_provisioning.sql = database\postgresql\006_controller_provisioning.sql
+		database\postgresql\007_smartlock_read_models.sql = database\postgresql\007_smartlock_read_models.sql
+		database\postgresql\008_controller_acknowledgement_key.sql = database\postgresql\008_controller_acknowledgement_key.sql
+		database\postgresql\009_lock_command_outbox.sql = database\postgresql\009_lock_command_outbox.sql
+		database\postgresql\010_face_biometric_templates.sql = database\postgresql\010_face_biometric_templates.sql
 		database\sqlserver\001_homes.sql = database\sqlserver\001_homes.sql
 		database\sqlserver\002_identity.sql = database\sqlserver\002_identity.sql
 		database\sqlserver\003_devices.sql = database\sqlserver\003_devices.sql
 		database\sqlserver\004_smartlocks.sql = database\sqlserver\004_smartlocks.sql
 		database\sqlserver\005_auditlogs.sql = database\sqlserver\005_auditlogs.sql
 		database\sqlserver\006_controller_provisioning.sql = database\sqlserver\006_controller_provisioning.sql
+		database\sqlserver\007_smartlock_read_models.sql = database\sqlserver\007_smartlock_read_models.sql
+		database\sqlserver\008_controller_acknowledgement_key.sql = database\sqlserver\008_controller_acknowledgement_key.sql
+		database\sqlserver\009_lock_command_outbox.sql = database\sqlserver\009_lock_command_outbox.sql
+		database\sqlserver\010_face_biometric_templates.sql = database\sqlserver\010_face_biometric_templates.sql
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "postman", "postman", "{32B92054-09D1-4A6D-8B5A-3340D164A086}"

@@ -119,6 +119,29 @@ public sealed class SmartLockSecurityHandlerTests
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new AcknowledgeControllerCommand(controller.Id, command.Id, "Unlocked", occurredAt, nonce, signature, null), TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task Controller_acknowledgement_accepts_standard_p256_der_signatures()
+    {
+        var ownerId = Guid.NewGuid();
+        var homeId = Guid.NewGuid();
+        using var controllerKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var spki = controllerKey.ExportSubjectPublicKeyInfo();
+        var controller = Device.Rehydrate(Guid.NewGuid(), homeId, "ESP32-TEST-DER", "Front Door ESP32", "verixora/controller-der", DeviceStatus.Online, DateTime.UtcNow, null, null, Convert.ToHexString(SHA256.HashData(spki)), Convert.ToBase64String(spki), "test-controller", DateTime.UtcNow);
+        var smartLock = new SmartLock("Front Door", controller.Id, homeId);
+        var command = new LockCommand(smartLock.Id, controller.Id, homeId, ownerId, "ack-command-der", DateTime.UtcNow.AddSeconds(30));
+        var commands = new InMemoryLockCommandRepository();
+        await commands.CreateOrGetAsync(command, TestContext.Current.CancellationToken);
+        var occurredAt = DateTime.UtcNow;
+        var nonce = "controller-der-nonce";
+        var payload = Encoding.UTF8.GetBytes(AcknowledgeControllerCommandHandler.CanonicalPayload(controller.Id, command.Id, "Unlocked", occurredAt, nonce));
+        var signature = Convert.ToBase64String(controllerKey.SignData(payload, HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence));
+        var handler = new AcknowledgeControllerCommandHandler(new InMemoryDeviceRepository(controller), commands, new InMemorySmartLockRepository(smartLock), new CapturingAuditLogService());
+
+        var result = await handler.Handle(new AcknowledgeControllerCommand(controller.Id, command.Id, "Unlocked", occurredAt, nonce, signature, null), TestContext.Current.CancellationToken);
+
+        Assert.True(result.DoorUnlocked);
+    }
+
     private sealed class InMemorySmartLockRepository(params SmartLock[] locks) : ISmartLockRepository
     {
         private readonly List<SmartLock> _locks = locks.ToList();

@@ -15,6 +15,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddSingleton<DbConnectionFactory>();
         var mode = Enum.TryParse<DataAccessMode>(configuration["DataAccess:Mode"], ignoreCase: true, out var configuredMode)
             ? configuredMode
             : DataAccessMode.DapperStoredProcedure;
@@ -43,7 +44,6 @@ public static class DependencyInjection
         }
         else
         {
-            services.AddSingleton<DbConnectionFactory>();
             _ = mode switch
             {
                 DataAccessMode.DapperStoredProcedure => services.AddScoped<ISmartLockRepository, DapperSmartLockRepository>().AddScoped<ILockCommandRepository, DapperLockCommandRepository>(),
@@ -63,7 +63,12 @@ public static class DependencyInjection
 
         //services.AddSingleton<IAuthorizationService, MockAuthorizationService>();
         services.AddSingleton<IAuthorizationService, ScheduleBasedAuthorizationService>();
-        //services.AddSingleton<IFaceVerificationProvider, MockFaceVerificationProvider>();
+        services.AddSingleton<IFaceTemplateProtector, AesGcmFaceTemplateProtector>();
+        _ = mode switch
+        {
+            DataAccessMode.AdoNetStoredProcedure => services.AddScoped<IFaceTemplateRepository, AdoNetFaceTemplateRepository>(),
+            _ => services.AddScoped<IFaceTemplateRepository, DapperFaceTemplateRepository>()
+        };
         services.AddHttpClient<IFaceVerificationProvider, PythonFaceVerificationProvider>(client =>
         {
             client.BaseAddress = new Uri(configuration["FaceService:BaseUrl"] ?? "http://localhost:5001");

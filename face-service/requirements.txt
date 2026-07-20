@@ -1,6 +1,8 @@
 fastapi==0.110.0
 uvicorn[standard]==0.27.1
-face-recognition==1.3.0
 python-multipart==0.0.9
 pillow==10.2.0
 numpy==1.26.4
+face-recognition-models==0.3.0
+# Prebuilt wheel prevents an hours-long native dlib build in local Docker/CI.
+dlib-bin==19.24.6

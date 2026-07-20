@@ -22,5 +22,6 @@
     <ProjectReference Include="..\..\modules\Homes\Homes.Domain\Homes.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Application\SmartLocks.Application.csproj" />
     <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Domain\SmartLocks.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\Smartlocks\SmartLocks.Infrastructure\SmartLocks.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -27,7 +27,10 @@
     { "key": "controllerCommandId", "value": "" },
     { "key": "controllerAckNonce", "value": "replace-with-a-unique-controller-nonce" },
     { "key": "controllerAckOccurredAtUtc", "value": "2026-01-01T00:00:00.0000000Z" },
-    { "key": "controllerAckSignatureBase64", "value": "replace-with-p256-DER-or-64-byte-ieee-p1363-signature" }
+    { "key": "controllerAckSignatureBase64", "value": "replace-with-p256-DER-or-64-byte-ieee-p1363-signature" },
+    { "key": "faceEnrollmentImage1", "value": "replace-with-an-absolute-path-to-face-1.jpg" },
+    { "key": "faceEnrollmentImage2", "value": "replace-with-an-absolute-path-to-face-2.jpg" },
+    { "key": "faceEnrollmentImage3", "value": "replace-with-an-absolute-path-to-face-3.jpg" }
   ],
   "item": [
     {
@@ -141,7 +144,22 @@
       ]
     },
     {
-      "name": "05 Door locks and audit trail",
+      "name": "05 Face enrollment",
+      "item": [
+        {
+          "name": "Reject enrollment with too few images",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/face/enroll", "body": { "mode": "formdata", "formdata": [{ "key": "images", "type": "file", "src": "{{faceEnrollmentImage1}}" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('At least three images are required', () => pm.expect(pm.response.code).to.equal(400));"] } }]
+        },
+        {
+          "name": "Enroll encrypted face templates",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/face/enroll", "body": { "mode": "formdata", "formdata": [{ "key": "images", "type": "file", "src": "{{faceEnrollmentImage1}}" }, { "key": "images", "type": "file", "src": "{{faceEnrollmentImage2}}" }, { "key": "images", "type": "file", "src": "{{faceEnrollmentImage3}}" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Face templates are enrolled', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Enrollment does not expose raw templates', () => pm.expect(pm.response.text()).to.not.include('embedding'));", "pm.test('Three frames are acknowledged', () => pm.expect(pm.response.json().acceptedFrames).to.equal(3));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "06 Door locks and audit trail",
       "item": [
         {
           "name": "Register lock after controller provisioning",
@@ -171,7 +189,7 @@
       ]
     },
     {
-      "name": "06 Security regression",
+      "name": "07 Security regression",
       "item": [
         {
           "name": "Reject anonymous device registration",
