@@ -45,4 +45,11 @@ public sealed class EfHomeRepository(HomesDbContext context) : IHomeRepository
                     home.CreatedAtUtc))
             .ToList();
     }
+
+    public async Task<IReadOnlyList<HomeSummary>> GetAllAsync(CancellationToken cancellationToken = default)
+        => await context.Homes
+            .AsNoTracking()
+            .OrderBy(home => home.CreatedAt)
+            .Select(home => new HomeSummary(home.Id, home.Name, home.OwnerId, "SystemAdmin", home.MaxDevices, home.CreatedAt))
+            .ToListAsync(cancellationToken);
 }

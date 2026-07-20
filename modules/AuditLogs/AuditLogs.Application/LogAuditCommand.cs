@@ -1,4 +1,5 @@
 using MediatR;
+using AuditLogs.Domain;
 
 namespace AuditLogs.Application;
 
@@ -9,4 +10,4 @@ public record LogAuditCommand(
     string Action,
     bool Result,
     string? Details = null
-) : IRequest;
+) : IRequest<AuditLog>;

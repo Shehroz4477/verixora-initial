@@ -21,6 +21,13 @@ public sealed class AdoNetHomeRepository(DbConnectionFactory connectionFactory) 
         using var reader = await command.ExecuteReaderAsync(cancellationToken); var homes = new List<HomeSummary>(); while (await reader.ReadAsync(cancellationToken)) homes.Add(Map(reader)); return homes;
     }
 
+    public async Task<IReadOnlyList<HomeSummary>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        using var connection = (DbConnection)connectionFactory.CreateConnection(); await connection.OpenAsync(cancellationToken);
+        using var command = connection.CreateCommand(); command.CommandText = connectionFactory.Provider == "SqlServer" ? "homes.sp_GetAllHomes" : "select id as \"Id\", name as \"Name\", owner_id as \"OwnerId\", role as \"Role\", max_devices as \"MaxDevices\", created_at_utc as \"CreatedAtUtc\" from homes.fn_get_all_homes()"; command.CommandType = connectionFactory.Provider == "SqlServer" ? CommandType.StoredProcedure : CommandType.Text;
+        using var reader = await command.ExecuteReaderAsync(cancellationToken); var homes = new List<HomeSummary>(); while (await reader.ReadAsync(cancellationToken)) homes.Add(Map(reader)); return homes;
+    }
+
     private async Task<HomeSummary> ReadSingleAsync(string sqlServerRoutine, string postgresSql, IReadOnlyDictionary<string, object?> values, CancellationToken cancellationToken)
     { using var connection = (DbConnection)connectionFactory.CreateConnection(); await connection.OpenAsync(cancellationToken); using var command = connection.CreateCommand(); command.CommandText = connectionFactory.Provider == "SqlServer" ? sqlServerRoutine : postgresSql; command.CommandType = connectionFactory.Provider == "SqlServer" ? CommandType.StoredProcedure : CommandType.Text; foreach (var value in values) Add(command, value.Key, value.Value); using var reader = await command.ExecuteReaderAsync(cancellationToken); if (!await reader.ReadAsync(cancellationToken)) throw new InvalidOperationException("Database routine returned no home."); return Map(reader); }
     private static void Add(DbCommand command, string name, object? value) { var parameter = command.CreateParameter(); parameter.ParameterName = name; parameter.Value = value ?? DBNull.Value; command.Parameters.Add(parameter); }

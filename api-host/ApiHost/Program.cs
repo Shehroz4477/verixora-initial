@@ -17,6 +17,7 @@ using AuditLogs.Application;
 using Homes.Application;
 using Homes.Infrastructure;
 using Homes.Presentation;
+using ApiHost;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
@@ -46,6 +47,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = jwtIssuer,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrWhiteSpace(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -57,7 +68,7 @@ builder.Services.AddCors(options => options.AddPolicy("VerixoraWeb", policy =>
     policy.WithOrigins(allowedCorsOrigins).AllowAnyHeader().AllowAnyMethod();
 }));
 
-builder.Services.AddScoped<IAuditLogService,AuditLogService>();
+builder.Services.AddScoped<IAuditLogService, SignalRAuditLogService>();
 
 // Add Identity module
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
@@ -85,6 +96,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -98,5 +110,6 @@ app.UseCors("VerixoraWeb");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<MonitoringHub>("/hubs/system-monitoring");
 
 app.Run();

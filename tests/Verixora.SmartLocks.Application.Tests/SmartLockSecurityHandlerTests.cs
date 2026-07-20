@@ -171,6 +171,8 @@ public sealed class SmartLockSecurityHandlerTests
         public Task<HomeSummary> AddAsync(Homes.Domain.Home home, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<HomeSummary>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<HomeSummary>>(homes.Where(home => home.OwnerId == userId).ToList());
+        public Task<IReadOnlyList<HomeSummary>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<HomeSummary>>(homes);
     }
 
     private static User CreateTrustedUser(Guid userId)

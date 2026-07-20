@@ -42,4 +42,16 @@ public sealed class DapperHomeRepository(DbConnectionFactory connectionFactory) 
         };
         return results.AsList();
     }
+
+    public async Task<IReadOnlyList<HomeSummary>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var results = connectionFactory.Provider switch
+        {
+            "SqlServer" => await connection.QueryAsync<HomeSummary>(new CommandDefinition("homes.sp_GetAllHomes", commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
+            "PostgreSql" => await connection.QueryAsync<HomeSummary>(new CommandDefinition("select id as \"Id\", name as \"Name\", owner_id as \"OwnerId\", role as \"Role\", max_devices as \"MaxDevices\", created_at_utc as \"CreatedAtUtc\" from homes.fn_get_all_homes()", cancellationToken: cancellationToken)),
+            _ => throw new NotSupportedException($"Homes routines are not available for '{connectionFactory.Provider}'.")
+        };
+        return results.AsList();
+    }
 }

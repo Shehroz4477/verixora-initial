@@ -15,9 +15,10 @@ public sealed class HomesController(IMediator mediator) : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<HomeSummary>>> GetMine(CancellationToken cancellationToken)
-        => Ok(await mediator.Send(new GetMyHomesQuery(CurrentUserId()), cancellationToken));
+        => Ok(await mediator.Send(new GetMyHomesQuery(CurrentUserId(), IsSystemAdmin()), cancellationToken));
 
     private Guid CurrentUserId() => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : throw new UnauthorizedAccessException();
+    private bool IsSystemAdmin() => string.Equals(User.FindFirstValue(ClaimTypes.Role), "SystemAdmin", StringComparison.Ordinal);
 }
 
 public sealed record CreateHomeRequest(string Name);
