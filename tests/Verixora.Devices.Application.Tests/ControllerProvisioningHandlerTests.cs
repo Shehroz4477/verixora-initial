@@ -22,6 +22,7 @@ public sealed class ControllerProvisioningHandlerTests
         Assert.Equal("Active", result.Status);
         Assert.NotEmpty(result.ControllerPublicKeyThumbprint);
         Assert.Equal("hash:pairing-token", repository.ReceivedHash);
+        Assert.Equal(Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()), repository.ReceivedSpkiBase64);
         Assert.Equal("local-test:ESP32-PAIR-1", repository.ReceivedSubject);
     }
 
@@ -54,12 +55,13 @@ public sealed class ControllerProvisioningHandlerTests
     {
         public bool CompletionResult { get; init; }
         public string? ReceivedHash { get; private set; }
+        public string? ReceivedSpkiBase64 { get; private set; }
         public string? ReceivedSubject { get; private set; }
         public Task<Device?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<Device?>(id == device.Id ? device : null);
         public Task<Device?> GetByHardwareIdAsync(string hardwareId, CancellationToken cancellationToken = default) => Task.FromResult<Device?>(hardwareId == device.HardwareId ? device : null);
         public Task<List<Device>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default) => Task.FromResult(homeId == device.HomeId ? new List<Device> { device } : new List<Device>());
         public Task AddAsync(Device item, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UpdateAsync(Device item, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default) { ReceivedHash = provisioningTokenHash; ReceivedSubject = attestationSubject; return Task.FromResult(CompletionResult); }
+        public Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string publicKeySpkiBase64, string attestationSubject, CancellationToken cancellationToken = default) { ReceivedHash = provisioningTokenHash; ReceivedSpkiBase64 = publicKeySpkiBase64; ReceivedSubject = attestationSubject; return Task.FromResult(CompletionResult); }
     }
 }

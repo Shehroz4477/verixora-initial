@@ -71,6 +71,20 @@ public class SmartLocksController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
+    [HttpPost("controller-acknowledgements")]
+    public async Task<IActionResult> AcknowledgeController([FromBody] ControllerAcknowledgementRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _mediator.Send(new AcknowledgeControllerCommand(request.DeviceId, request.CommandId, request.Outcome, request.OccurredAtUtc, request.Nonce, request.SignatureBase64, request.Details), cancellationToken));
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
     private Guid GetUserIdFromToken()
     {
         var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
@@ -91,3 +105,4 @@ public class UnlockRequest
 }
 
 public sealed record RegisterSmartLockRequest(string Name, Guid DeviceId, Guid HomeId, bool RequiresFace = false);
+public sealed record ControllerAcknowledgementRequest(Guid DeviceId, Guid CommandId, string Outcome, DateTime OccurredAtUtc, string Nonce, string SignatureBase64, string? Details);

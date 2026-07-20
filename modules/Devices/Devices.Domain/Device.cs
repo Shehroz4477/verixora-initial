@@ -15,6 +15,7 @@ public class Device : Entity, IAggregateRoot
     public string? ProvisioningTokenHash { get; private set; }
     public DateTime? ProvisioningExpiresAt { get; private set; }
     public string? ControllerPublicKeyThumbprint { get; private set; }
+    public string? ControllerPublicKeySpkiBase64 { get; private set; }
     public string? HardwareAttestationSubject { get; private set; }
     public DateTime? ProvisionedAt { get; private set; }
 
@@ -53,6 +54,7 @@ public class Device : Entity, IAggregateRoot
         string? provisioningTokenHash,
         DateTime? provisioningExpiresAt,
         string? controllerPublicKeyThumbprint,
+        string? controllerPublicKeySpkiBase64,
         string? hardwareAttestationSubject,
         DateTime? provisionedAt)
     {
@@ -68,6 +70,7 @@ public class Device : Entity, IAggregateRoot
             ProvisioningTokenHash = provisioningTokenHash,
             ProvisioningExpiresAt = provisioningExpiresAt,
             ControllerPublicKeyThumbprint = controllerPublicKeyThumbprint,
+            ControllerPublicKeySpkiBase64 = controllerPublicKeySpkiBase64,
             HardwareAttestationSubject = hardwareAttestationSubject,
             ProvisionedAt = provisionedAt
         };
@@ -84,17 +87,18 @@ public class Device : Entity, IAggregateRoot
         ProvisioningExpiresAt = expiresAtUtc;
     }
 
-    public void CompleteProvisioning(string suppliedTokenHash, string publicKeyThumbprint, string attestationSubject)
+    public void CompleteProvisioning(string suppliedTokenHash, string publicKeyThumbprint, string publicKeySpkiBase64, string attestationSubject)
     {
         if (Status != DeviceStatus.Pending || string.IsNullOrWhiteSpace(ProvisioningTokenHash) ||
             ProvisioningExpiresAt is null || ProvisioningExpiresAt <= DateTime.UtcNow)
             throw new DomainException("The controller provisioning session is invalid or expired.");
         if (!FixedTimeEquals(ProvisioningTokenHash, suppliedTokenHash))
             throw new DomainException("The controller provisioning token is invalid.");
-        if (string.IsNullOrWhiteSpace(publicKeyThumbprint) || string.IsNullOrWhiteSpace(attestationSubject))
+        if (string.IsNullOrWhiteSpace(publicKeyThumbprint) || string.IsNullOrWhiteSpace(publicKeySpkiBase64) || string.IsNullOrWhiteSpace(attestationSubject))
             throw new DomainException("A verified controller key and hardware attestation are required.");
 
         ControllerPublicKeyThumbprint = publicKeyThumbprint;
+        ControllerPublicKeySpkiBase64 = publicKeySpkiBase64;
         HardwareAttestationSubject = attestationSubject;
         ProvisionedAt = DateTime.UtcNow;
         ProvisioningTokenHash = null;

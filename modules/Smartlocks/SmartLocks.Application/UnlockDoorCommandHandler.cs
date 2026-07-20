@@ -19,6 +19,7 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
     private readonly IAuditLogService _auditLogService;
     private readonly IDeviceRepository _deviceRepository;
     private readonly IHomeRepository _homeRepository;
+    private readonly ILockCommandRepository _commandRepository;
 
     public UnlockDoorCommandHandler(
         ISmartLockRepository lockRepository,
@@ -27,7 +28,8 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
         IMqttPublisher mqttPublisher,
         IAuditLogService auditLogService,
         IDeviceRepository deviceRepository,
-        IHomeRepository homeRepository)
+        IHomeRepository homeRepository,
+        ILockCommandRepository commandRepository)
     {
         _lockRepository = lockRepository;
         _authService = authService;
@@ -36,6 +38,7 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
         _auditLogService = auditLogService;
         _deviceRepository = deviceRepository;
         _homeRepository = homeRepository;
+        _commandRepository = commandRepository;
     }
 
     public async Task<UnlockDoorResult> Handle(UnlockDoorCommand request, CancellationToken cancellationToken)
@@ -104,23 +107,34 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             }
         }
 
-        // Broker acceptance does not prove a physical unlock. The state change belongs to the
-        // controller acknowledgement workflow, so an outage cannot create a false unlock record.
+        // Broker acceptance does not prove a physical unlock. Persist the command first; it expires
+        // quickly so an outage can never turn an old user action into a later door opening.
+        var command = await _commandRepository.CreateOrGetAsync(
+            new LockCommand(smartLock.Id, smartLock.DeviceId, smartLock.HomeId, request.UserId, request.IdempotencyKey, DateTime.UtcNow.AddSeconds(30)),
+            cancellationToken);
+
+        if (command.Status is LockCommandStatus.Acknowledged or LockCommandStatus.Failed or LockCommandStatus.Expired)
+            return new UnlockDoorResult(command.Status == LockCommandStatus.Acknowledged, $"This unlock request was already processed: {command.Status}.");
+        if (command.Status == LockCommandStatus.Published)
+            return new UnlockDoorResult(true, "Unlock command was already delivered and is awaiting controller acknowledgement.");
+
         var payload = JsonSerializer.Serialize(new
         {
             command = "unlock",
             lockId = smartLock.Id,
-            commandId = request.IdempotencyKey,
-            requestedAtUtc = DateTime.UtcNow
+            commandId = command.Id,
+            requestedAtUtc = command.RequestedAtUtc,
+            expiresAtUtc = command.ExpiresAtUtc
         });
         try
         {
             await _mqttPublisher.PublishAsync($"{device.MqttTopic}/commands", payload);
+            await _commandRepository.MarkPublishedAsync(command.Id, cancellationToken);
         }
         catch (Exception)
         {
-            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "MQTT broker rejected command");
-            throw new DomainException("The unlock command could not be queued. The door remains locked.");
+            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", true, "Command stored in durable outbox; broker delivery is pending");
+            return new UnlockDoorResult(true, "Unlock command stored securely and is awaiting controller delivery. It expires automatically if not delivered.");
         }
 
         await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", true, "Command accepted by MQTT broker; awaiting controller acknowledgement");

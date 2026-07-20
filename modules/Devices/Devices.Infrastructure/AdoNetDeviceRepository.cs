@@ -36,19 +36,19 @@ public sealed class AdoNetDeviceRepository(DbConnectionFactory connectionFactory
     public Task AddAsync(Device device, CancellationToken cancellationToken = default)
         => SaveAsync("devices.sp_CreateDevice", "select * from devices.fn_create_device(@Id, @HomeId, @HardwareId, @Name, @MqttTopic, @Status, @CreatedAtUtc, @ProvisioningTokenHash, @ProvisioningExpiresAtUtc)", device, cancellationToken);
 
-    public async Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default)
+    public async Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string publicKeySpkiBase64, string attestationSubject, CancellationToken cancellationToken = default)
     {
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = connectionFactory.Provider switch
         {
-            "SqlServer" => "devices.sp_CompleteDeviceProvisioning",
-            "PostgreSql" => "select devices.fn_complete_device_provisioning(@Id, @ProvisioningTokenHash, @ControllerPublicKeyThumbprint, @HardwareAttestationSubject)",
+            "SqlServer" => "devices.sp_CompleteDeviceProvisioningV2",
+            "PostgreSql" => "select devices.fn_complete_device_provisioning_v2(@Id, @ProvisioningTokenHash, @ControllerPublicKeyThumbprint, @ControllerPublicKeySpkiBase64, @HardwareAttestationSubject)",
             _ => throw UnsupportedProvider()
         };
         command.CommandType = connectionFactory.Provider == "SqlServer" ? CommandType.StoredProcedure : CommandType.Text;
-        Add(command, "Id", deviceId); Add(command, "ProvisioningTokenHash", provisioningTokenHash); Add(command, "ControllerPublicKeyThumbprint", publicKeyThumbprint); Add(command, "HardwareAttestationSubject", attestationSubject);
+        Add(command, "Id", deviceId); Add(command, "ProvisioningTokenHash", provisioningTokenHash); Add(command, "ControllerPublicKeyThumbprint", publicKeyThumbprint); Add(command, "ControllerPublicKeySpkiBase64", publicKeySpkiBase64); Add(command, "HardwareAttestationSubject", attestationSubject);
         var result = await command.ExecuteScalarAsync(cancellationToken);
         return result is not null && result is not DBNull && Convert.ToBoolean(result);
     }
@@ -123,12 +123,13 @@ public sealed class AdoNetDeviceRepository(DbConnectionFactory connectionFactory
         ProvisioningTokenHash = NullableString(reader, "ProvisioningTokenHash"),
         ProvisioningExpiresAtUtc = NullableDateTime(reader, "ProvisioningExpiresAtUtc"),
         ControllerPublicKeyThumbprint = NullableString(reader, "ControllerPublicKeyThumbprint"),
+        ControllerPublicKeySpkiBase64 = NullableString(reader, "ControllerPublicKeySpkiBase64"),
         HardwareAttestationSubject = NullableString(reader, "HardwareAttestationSubject"),
         ProvisionedAtUtc = NullableDateTime(reader, "ProvisionedAtUtc")
     };
 
     private static string PostgreSqlSelect(string routine, string parameterName)
-        => $"select id as \"Id\", home_id as \"HomeId\", hardware_id as \"HardwareId\", name as \"Name\", mqtt_topic as \"MqttTopic\", status as \"Status\", created_at_utc as \"CreatedAtUtc\", provisioning_token_hash as \"ProvisioningTokenHash\", provisioning_expires_at_utc as \"ProvisioningExpiresAtUtc\", controller_public_key_thumbprint as \"ControllerPublicKeyThumbprint\", hardware_attestation_subject as \"HardwareAttestationSubject\", provisioned_at_utc as \"ProvisionedAtUtc\" from {routine}(@{parameterName})";
+        => $"select id as \"Id\", home_id as \"HomeId\", hardware_id as \"HardwareId\", name as \"Name\", mqtt_topic as \"MqttTopic\", status as \"Status\", created_at_utc as \"CreatedAtUtc\", provisioning_token_hash as \"ProvisioningTokenHash\", provisioning_expires_at_utc as \"ProvisioningExpiresAtUtc\", controller_public_key_thumbprint as \"ControllerPublicKeyThumbprint\", controller_public_key_spki_base64 as \"ControllerPublicKeySpkiBase64\", hardware_attestation_subject as \"HardwareAttestationSubject\", provisioned_at_utc as \"ProvisionedAtUtc\" from {routine}(@{parameterName})";
 
     private static string? NullableString(DbDataReader reader, string name) { var ordinal = reader.GetOrdinal(name); return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal); }
     private static DateTime? NullableDateTime(DbDataReader reader, string name) { var ordinal = reader.GetOrdinal(name); return reader.IsDBNull(ordinal) ? null : reader.GetDateTime(ordinal); }

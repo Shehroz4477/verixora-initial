@@ -23,7 +23,11 @@
     { "key": "controllerProvisioningToken", "value": "" },
     { "key": "controllerPublicKeyPem", "value": "replace-with-a-p256-subject-public-key-info-pem" },
     { "key": "smartLockId", "value": "" },
-    { "key": "unlockIdempotencyKey", "value": "replace-with-a-new-uuid-per-unlock" }
+    { "key": "unlockIdempotencyKey", "value": "replace-with-a-new-uuid-per-unlock" },
+    { "key": "controllerCommandId", "value": "" },
+    { "key": "controllerAckNonce", "value": "replace-with-a-unique-controller-nonce" },
+    { "key": "controllerAckOccurredAtUtc", "value": "2026-01-01T00:00:00.0000000Z" },
+    { "key": "controllerAckSignatureBase64", "value": "replace-with-64-byte-p256-ieee-p1363-signature" }
   ],
   "item": [
     {
@@ -153,6 +157,11 @@
           "name": "Reject remote unlock while controller is offline",
           "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/locks/{{smartLockId}}/unlock", "body": { "mode": "formdata", "formdata": [{ "key": "idempotencyKey", "value": "{{unlockIdempotencyKey}}", "type": "text" }] } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Offline controller does not unlock remotely', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Response instructs local override path', () => pm.expect(pm.response.json().error).to.include('controller is not online'));"] } }]
+        },
+        {
+          "name": "Accept a signed controller acknowledgement",
+          "request": { "method": "POST", "url": "{{baseUrl}}/locks/controller-acknowledgements", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"deviceId\": \"{{deviceId}}\",\n  \"commandId\": \"{{controllerCommandId}}\",\n  \"outcome\": \"Unlocked\",\n  \"occurredAtUtc\": \"{{controllerAckOccurredAtUtc}}\",\n  \"nonce\": \"{{controllerAckNonce}}\",\n  \"signatureBase64\": \"{{controllerAckSignatureBase64}}\",\n  \"details\": \"controller confirmed physical unlock\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Only a valid controller P-256 signature is accepted', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Acknowledgement confirms physical unlock', () => pm.expect(pm.response.json().doorUnlocked).to.equal(true));"] } }]
         },
         {
           "name": "Get owner-scoped audit trail",

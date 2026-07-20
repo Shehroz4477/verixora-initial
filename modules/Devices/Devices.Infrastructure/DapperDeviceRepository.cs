@@ -54,14 +54,14 @@ public sealed class DapperDeviceRepository(DbConnectionFactory connectionFactory
         }
     }
 
-    public async Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default)
+    public async Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string publicKeySpkiBase64, string attestationSubject, CancellationToken cancellationToken = default)
     {
         await using var connection = connectionFactory.CreateConnection();
-        var parameters = new { Id = deviceId, ProvisioningTokenHash = provisioningTokenHash, ControllerPublicKeyThumbprint = publicKeyThumbprint, HardwareAttestationSubject = attestationSubject };
+        var parameters = new { Id = deviceId, ProvisioningTokenHash = provisioningTokenHash, ControllerPublicKeyThumbprint = publicKeyThumbprint, ControllerPublicKeySpkiBase64 = publicKeySpkiBase64, HardwareAttestationSubject = attestationSubject };
         return connectionFactory.Provider switch
         {
-            "SqlServer" => await connection.QuerySingleAsync<bool>(new CommandDefinition("devices.sp_CompleteDeviceProvisioning", parameters, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
-            "PostgreSql" => await connection.QuerySingleAsync<bool>(new CommandDefinition("select devices.fn_complete_device_provisioning(@Id, @ProvisioningTokenHash, @ControllerPublicKeyThumbprint, @HardwareAttestationSubject)", parameters, cancellationToken: cancellationToken)),
+            "SqlServer" => await connection.QuerySingleAsync<bool>(new CommandDefinition("devices.sp_CompleteDeviceProvisioningV2", parameters, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
+            "PostgreSql" => await connection.QuerySingleAsync<bool>(new CommandDefinition("select devices.fn_complete_device_provisioning_v2(@Id, @ProvisioningTokenHash, @ControllerPublicKeyThumbprint, @ControllerPublicKeySpkiBase64, @HardwareAttestationSubject)", parameters, cancellationToken: cancellationToken)),
             _ => throw UnsupportedProvider()
         };
     }
@@ -95,7 +95,7 @@ public sealed class DapperDeviceRepository(DbConnectionFactory connectionFactory
     }
 
     private static string PostgreSqlSelect(string routine, string parameterName)
-        => $"select id as \"Id\", home_id as \"HomeId\", hardware_id as \"HardwareId\", name as \"Name\", mqtt_topic as \"MqttTopic\", status as \"Status\", created_at_utc as \"CreatedAtUtc\", provisioning_token_hash as \"ProvisioningTokenHash\", provisioning_expires_at_utc as \"ProvisioningExpiresAtUtc\", controller_public_key_thumbprint as \"ControllerPublicKeyThumbprint\", hardware_attestation_subject as \"HardwareAttestationSubject\", provisioned_at_utc as \"ProvisionedAtUtc\" from {routine}(@{parameterName})";
+        => $"select id as \"Id\", home_id as \"HomeId\", hardware_id as \"HardwareId\", name as \"Name\", mqtt_topic as \"MqttTopic\", status as \"Status\", created_at_utc as \"CreatedAtUtc\", provisioning_token_hash as \"ProvisioningTokenHash\", provisioning_expires_at_utc as \"ProvisioningExpiresAtUtc\", controller_public_key_thumbprint as \"ControllerPublicKeyThumbprint\", controller_public_key_spki_base64 as \"ControllerPublicKeySpkiBase64\", hardware_attestation_subject as \"HardwareAttestationSubject\", provisioned_at_utc as \"ProvisionedAtUtc\" from {routine}(@{parameterName})";
 
     private NotSupportedException UnsupportedProvider() => new($"Device routines are not available for '{connectionFactory.Provider}'.");
 }

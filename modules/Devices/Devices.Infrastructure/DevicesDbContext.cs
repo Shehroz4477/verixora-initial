@@ -29,6 +29,7 @@ public class DevicesDbContext : DbContext
             entity.Property(device => device.ProvisioningTokenHash).HasColumnName(isPostgreSql ? "provisioning_token_hash" : "ProvisioningTokenHash").HasMaxLength(128);
             entity.Property(device => device.ProvisioningExpiresAt).HasColumnName(isPostgreSql ? "provisioning_expires_at_utc" : "ProvisioningExpiresAtUtc");
             entity.Property(device => device.ControllerPublicKeyThumbprint).HasColumnName(isPostgreSql ? "controller_public_key_thumbprint" : "ControllerPublicKeyThumbprint").HasMaxLength(128);
+            entity.Property(device => device.ControllerPublicKeySpkiBase64).HasColumnName(isPostgreSql ? "controller_public_key_spki_base64" : "ControllerPublicKeySpkiBase64").HasMaxLength(256);
             entity.Property(device => device.HardwareAttestationSubject).HasColumnName(isPostgreSql ? "hardware_attestation_subject" : "HardwareAttestationSubject").HasMaxLength(256);
             entity.Property(device => device.ProvisionedAt).HasColumnName(isPostgreSql ? "provisioned_at_utc" : "ProvisionedAtUtc");
         });

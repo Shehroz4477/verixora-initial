@@ -17,15 +17,22 @@ public sealed class CompleteControllerProvisioningCommandHandler(IDeviceReposito
     {
         var device = await devices.GetByIdAsync(request.DeviceId, cancellationToken) ?? throw new DomainException("Controller provisioning session is invalid.");
         if (device.Status != DeviceStatus.Pending || string.IsNullOrWhiteSpace(request.ProvisioningToken)) throw new DomainException("Controller provisioning session is invalid.");
-        var thumbprint = PublicKeyThumbprint(request.ControllerPublicKeyPem);
+        var keyMaterial = PublicKeyMaterial(request.ControllerPublicKeyPem);
         var attestation = await attestations.VerifyAsync(new ControllerAttestationRequest(device.Id, device.HardwareId, request.ControllerPublicKeyPem, request.HardwareAttestation), cancellationToken);
         if (!attestation.IsValid || string.IsNullOrWhiteSpace(attestation.Subject)) throw new DomainException("Controller hardware attestation was rejected.");
-        if (!await devices.TryCompleteProvisioningAsync(device.Id, tokens.Hash(request.ProvisioningToken), thumbprint, attestation.Subject, cancellationToken)) throw new DomainException("Controller provisioning session is invalid or expired.");
-        return new CompleteControllerProvisioningResult(device.Id, "Active", thumbprint);
+        if (!await devices.TryCompleteProvisioningAsync(device.Id, tokens.Hash(request.ProvisioningToken), keyMaterial.Thumbprint, keyMaterial.SpkiBase64, attestation.Subject, cancellationToken)) throw new DomainException("Controller provisioning session is invalid or expired.");
+        return new CompleteControllerProvisioningResult(device.Id, "Active", keyMaterial.Thumbprint);
     }
-    private static string PublicKeyThumbprint(string pem)
+    private static (string Thumbprint, string SpkiBase64) PublicKeyMaterial(string pem)
     {
-        try { using var key = ECDsa.Create(); key.ImportFromPem(pem); if (key.KeySize != 256) throw new DomainException("Controller key must use P-256."); return Convert.ToHexString(SHA256.HashData(key.ExportSubjectPublicKeyInfo())); }
+        try
+        {
+            using var key = ECDsa.Create();
+            key.ImportFromPem(pem);
+            if (key.KeySize != 256) throw new DomainException("Controller key must use P-256.");
+            var spki = key.ExportSubjectPublicKeyInfo();
+            return (Convert.ToHexString(SHA256.HashData(spki)), Convert.ToBase64String(spki));
+        }
         catch (CryptographicException) { throw new DomainException("Controller public key is invalid."); }
     }
 }

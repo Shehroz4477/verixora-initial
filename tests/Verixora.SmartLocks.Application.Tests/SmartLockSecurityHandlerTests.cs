@@ -6,6 +6,8 @@ using FaceVerification.Domain;
 using Homes.Application;
 using SmartLocks.Application;
 using SmartLocks.Domain;
+using System.Security.Cryptography;
+using System.Text;
 using Xunit;
 
 namespace Verixora.SmartLocks.Application.Tests;
@@ -49,7 +51,8 @@ public sealed class SmartLockSecurityHandlerTests
             mqtt,
             audit,
             new InMemoryDeviceRepository(controller),
-            new FixedHomeRepository(new HomeSummary(homeId, "Main Home", ownerId, "Owner", 20, DateTime.UtcNow)));
+            new FixedHomeRepository(new HomeSummary(homeId, "Main Home", ownerId, "Owner", 20, DateTime.UtcNow)),
+            new InMemoryLockCommandRepository());
 
         var result = await handler.Handle(
             new UnlockDoorCommand(smartLock.Id, ownerId, "Owner", null, "command-1"),
@@ -59,7 +62,7 @@ public sealed class SmartLockSecurityHandlerTests
         Assert.Contains("queued", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(LockStatus.Locked, smartLock.Status);
         Assert.Equal($"{controller.MqttTopic}/commands", mqtt.Topic);
-        Assert.Contains("command-1", mqtt.Payload);
+        Assert.Contains("commandId", mqtt.Payload);
         var eventEntry = Assert.Single(audit.Events);
         Assert.True(eventEntry.Result);
         Assert.Equal("UnlockCommand", eventEntry.Action);
@@ -88,6 +91,34 @@ public sealed class SmartLockSecurityHandlerTests
         Assert.True(summary.RequiresFace);
     }
 
+    [Fact]
+    public async Task Verified_controller_acknowledgement_marks_the_door_unlocked_once()
+    {
+        var ownerId = Guid.NewGuid();
+        var homeId = Guid.NewGuid();
+        using var controllerKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var spki = controllerKey.ExportSubjectPublicKeyInfo();
+        var controller = Device.Rehydrate(Guid.NewGuid(), homeId, "ESP32-TEST-4", "Front Door ESP32", "verixora/controller-4", DeviceStatus.Online, DateTime.UtcNow, null, null, Convert.ToHexString(SHA256.HashData(spki)), Convert.ToBase64String(spki), "test-controller", DateTime.UtcNow);
+        var smartLock = new SmartLock("Front Door", controller.Id, homeId);
+        var command = new LockCommand(smartLock.Id, controller.Id, homeId, ownerId, "ack-command-1", DateTime.UtcNow.AddSeconds(30));
+        var commandRepository = new InMemoryLockCommandRepository();
+        await commandRepository.CreateOrGetAsync(command, TestContext.Current.CancellationToken);
+        var lockRepository = new InMemorySmartLockRepository(smartLock);
+        var audit = new CapturingAuditLogService();
+        var occurredAt = DateTime.UtcNow;
+        var nonce = "controller-nonce-1";
+        var payload = Encoding.UTF8.GetBytes(AcknowledgeControllerCommandHandler.CanonicalPayload(controller.Id, command.Id, "Unlocked", occurredAt, nonce));
+        var signature = Convert.ToBase64String(controllerKey.SignData(payload, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+        var handler = new AcknowledgeControllerCommandHandler(new InMemoryDeviceRepository(controller), commandRepository, lockRepository, audit);
+
+        var result = await handler.Handle(new AcknowledgeControllerCommand(controller.Id, command.Id, "Unlocked", occurredAt, nonce, signature, null), TestContext.Current.CancellationToken);
+
+        Assert.True(result.DoorUnlocked);
+        Assert.Equal(LockStatus.Unlocked, smartLock.Status);
+        Assert.Single(audit.Events, entry => entry.Action == "ControllerAcknowledgement" && entry.Result);
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new AcknowledgeControllerCommand(controller.Id, command.Id, "Unlocked", occurredAt, nonce, signature, null), TestContext.Current.CancellationToken));
+    }
+
     private sealed class InMemorySmartLockRepository(params SmartLock[] locks) : ISmartLockRepository
     {
         private readonly List<SmartLock> _locks = locks.ToList();
@@ -105,7 +136,7 @@ public sealed class SmartLockSecurityHandlerTests
         public Task<List<Device>> GetByHomeIdAsync(Guid homeId, CancellationToken cancellationToken = default) => Task.FromResult(_devices.Where(device => device.HomeId == homeId).ToList());
         public Task AddAsync(Device device, CancellationToken cancellationToken = default) { _devices.Add(device); return Task.CompletedTask; }
         public Task UpdateAsync(Device device, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string attestationSubject, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<bool> TryCompleteProvisioningAsync(Guid deviceId, string provisioningTokenHash, string publicKeyThumbprint, string publicKeySpkiBase64, string attestationSubject, CancellationToken cancellationToken = default) => Task.FromResult(false);
     }
 
     private sealed class FixedHomeRepository(params HomeSummary[] homes) : IHomeRepository
@@ -132,6 +163,26 @@ public sealed class SmartLockSecurityHandlerTests
         public string Topic { get; private set; } = string.Empty;
         public string Payload { get; private set; } = string.Empty;
         public Task PublishAsync(string topic, string payload) { Topic = topic; Payload = payload; return Task.CompletedTask; }
+    }
+
+    private sealed class InMemoryLockCommandRepository : ILockCommandRepository
+    {
+        private readonly List<LockCommand> _commands = [];
+        public Task<LockCommand> CreateOrGetAsync(LockCommand command, CancellationToken cancellationToken = default)
+        {
+            var existing = _commands.SingleOrDefault(item => item.LockId == command.LockId && item.IdempotencyKey == command.IdempotencyKey);
+            if (existing is not null) return Task.FromResult(existing);
+            _commands.Add(command);
+            return Task.FromResult(command);
+        }
+        public Task<LockCommand?> GetByIdAsync(Guid commandId, CancellationToken cancellationToken = default) => Task.FromResult(_commands.SingleOrDefault(item => item.Id == commandId));
+        public Task<IReadOnlyList<LockCommand>> GetQueuedForDispatchAsync(int maximum, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LockCommand>>(_commands.Where(item => item.Status == LockCommandStatus.Queued).Take(maximum).ToList());
+        public Task<bool> MarkPublishedAsync(Guid commandId, CancellationToken cancellationToken = default) => Task.FromResult(_commands.Single(item => item.Id == commandId).TryMarkPublished(DateTime.UtcNow));
+        public Task<bool> TryAcknowledgeAsync(Guid commandId, Guid deviceId, string outcome, DateTime occurredAtUtc, string nonce, string details, CancellationToken cancellationToken = default)
+        {
+            var command = _commands.SingleOrDefault(item => item.Id == commandId && item.DeviceId == deviceId);
+            return Task.FromResult(command is not null && command.TryAcknowledge(outcome, occurredAtUtc, nonce, details));
+        }
     }
 
     private sealed class CapturingAuditLogService : IAuditLogService

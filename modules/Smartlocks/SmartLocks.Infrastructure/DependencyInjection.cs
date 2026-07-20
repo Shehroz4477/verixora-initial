@@ -39,14 +39,15 @@ public static class DependencyInjection
                     options.LogTo(Console.WriteLine, LogLevel.Information);
             });
             services.AddScoped<ISmartLockRepository, EfSmartLockRepository>();
+            services.AddScoped<ILockCommandRepository, EfLockCommandRepository>();
         }
         else
         {
             services.AddSingleton<DbConnectionFactory>();
             _ = mode switch
             {
-                DataAccessMode.DapperStoredProcedure => services.AddScoped<ISmartLockRepository, DapperSmartLockRepository>(),
-                DataAccessMode.AdoNetStoredProcedure => services.AddScoped<ISmartLockRepository, AdoSmartLockRepository>(),
+                DataAccessMode.DapperStoredProcedure => services.AddScoped<ISmartLockRepository, DapperSmartLockRepository>().AddScoped<ILockCommandRepository, DapperLockCommandRepository>(),
+                DataAccessMode.AdoNetStoredProcedure => services.AddScoped<ISmartLockRepository, AdoSmartLockRepository>().AddScoped<ILockCommandRepository, AdoLockCommandRepository>(),
                 _ => throw new NotSupportedException($"Data access mode '{mode}' is not supported.")
             };
         }
@@ -55,6 +56,7 @@ public static class DependencyInjection
         var brokerHost = configuration["Mqtt:Host"] ?? "localhost";
         var brokerPort = int.Parse(configuration["Mqtt:Port"] ?? "1883");
         services.AddSingleton<IMqttPublisher>(sp => new MqttPublisher(brokerHost, brokerPort));
+        services.AddHostedService<LockCommandOutboxDispatcher>();
 
         // Audit Log (mock for now; later replace with real AuditLogs module)
         //services.AddSingleton<IAuditLogService, MockAuditLogService>();
