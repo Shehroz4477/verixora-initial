@@ -18,10 +18,11 @@
 
 namespace {
 constexpr char kConfigNamespace[] = "verixora";
-constexpr char kLastCommandKey[] = "last-command";
+constexpr char kHandledCommandsKey[] = "handled-commands";
 constexpr char kPresenceServiceUuid[] = "6f9c0001-4f46-4a39-9b47-71a4cf173601";
 constexpr char kPresenceChallengeCharacteristicUuid[] = "6f9c0002-4f46-4a39-9b47-71a4cf173601";
 constexpr char kPresenceProofCharacteristicUuid[] = "6f9c0003-4f46-4a39-9b47-71a4cf173601";
+constexpr size_t kHandledCommandHistoryLimit = 32;
 
 Preferences preferences;
 WiFiClientSecure mqttTlsClient;
@@ -108,15 +109,51 @@ String randomNonce() {
 
 bool wasCommandAlreadyHandled(const String &commandId) {
   preferences.begin(kConfigNamespace, true);
-  const bool duplicate = preferences.getString(kLastCommandKey) == commandId;
+  const String serialized = preferences.getString(kHandledCommandsKey);
   preferences.end();
-  return duplicate;
+
+  if (serialized.isEmpty()) return false;
+
+  StaticJsonDocument<1536> history;
+  if (deserializeJson(history, serialized) != DeserializationError::Ok || !history.is<JsonArray>()) {
+    // An unreadable replay ledger must not turn into a permissive remote unlock.
+    Serial.println("Replay ledger is unreadable; refusing remote command.");
+    return true;
+  }
+
+  for (JsonVariant entry : history.as<JsonArray>()) {
+    if (entry.is<const char *>() && commandId == entry.as<const char *>()) return true;
+  }
+  return false;
 }
 
-void recordHandledCommand(const String &commandId) {
+bool recordHandledCommand(const String &commandId) {
   preferences.begin(kConfigNamespace, false);
-  preferences.putString(kLastCommandKey, commandId);
+  StaticJsonDocument<1536> history;
+  const String serialized = preferences.getString(kHandledCommandsKey);
+  if (!serialized.isEmpty() && (deserializeJson(history, serialized) != DeserializationError::Ok || !history.is<JsonArray>())) {
+    // Corruption is preserved as a fail-closed condition instead of silently losing replay protection.
+    preferences.end();
+    Serial.println("Replay ledger is unreadable; command was not executed.");
+    return false;
+  }
+
+  JsonArray commands = history.is<JsonArray>() ? history.as<JsonArray>() : history.to<JsonArray>();
+  for (JsonVariant entry : commands) {
+    if (entry.is<const char *>() && commandId == entry.as<const char *>()) {
+      preferences.end();
+      return true;
+    }
+  }
+  commands.add(commandId);
+  while (commands.size() > kHandledCommandHistoryLimit) commands.remove(0);
+
+  String updated;
+  serializeJson(commands, updated);
+  const bool persisted = preferences.putString(kHandledCommandsKey, updated) > 0;
   preferences.end();
+  if (!persisted) Serial.println("Unable to persist replay ledger; command was not executed.");
+  return persisted;
 }
 
 bool signAcknowledgement(const String &canonicalPayload, String &signatureBase64) {
@@ -288,9 +325,19 @@ void processPendingUnlock() {
     clearPendingUnlock();
     return;
   }
-  unlockDoorPulse();
-  postAcknowledgement(pendingUnlock.commandId, "Unlocked", "Controller validated Android Keystore BLE presence and pulsed lock relay");
-  recordHandledCommand(pendingUnlock.commandId);
+  // Persist before energising the lock. A power cut immediately after a pulse must not make the
+  // same short-lived command reusable when the controller restarts.
+  if (wasCommandAlreadyHandled(pendingUnlock.commandId)) {
+    clearPendingUnlock();
+    return;
+  }
+  if (recordHandledCommand(pendingUnlock.commandId)) {
+    unlockDoorPulse();
+    postAcknowledgement(pendingUnlock.commandId, "Unlocked", "Controller validated Android Keystore BLE presence and pulsed lock relay");
+  } else {
+    // The non-volatile ledger could not be written. Fail closed instead of risking a replay.
+    postAcknowledgement(pendingUnlock.commandId, "Failed", "Controller could not persist replay protection");
+  }
   clearPendingUnlock();
 }
 

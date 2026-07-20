@@ -2,7 +2,7 @@
 
 This firmware is deliberately fail-closed. It accepts an unlock only when all of these are true:
 
-- encrypted NVS contains a one-time-provisioned controller identity and mTLS credentials;
+- persistent NVS contains a one-time-provisioned controller identity and mTLS credentials; a production image must have ESP-IDF flash encryption enabled before customer deployment;
 - time is synchronized and the server command has not expired;
 - the MQTT topic is reached over mTLS with a per-controller broker ACL;
 - the command id has not already been handled;
@@ -16,6 +16,8 @@ For every short-lived unlock command, the controller advertises a BLE GATT servi
 - ESP32 DevKit V1 only for development; production should add an ATECC608B (or equivalent) secure element for the acknowledgement and mTLS private keys.
 - A listed 12 V electric strike/maglock controller, isolated relay or MOSFET driver, fused power supply, door-contact reed switch, tamper switch, and suitable enclosure.
 - A dedicated wired request-to-exit (REX) device and a mechanical keyed override. Both must bypass the MCU electrically so they still operate if firmware, network, backend, or power management fails. Follow local fire and building codes.
+
+The complete bill of materials, installation boundary, and physical acceptance tests are in [the hardware purchase and HIL guide](../../docs/HARDWARE_PURCHASE_AND_HIL.md). An ESP32 DevKit V1 is appropriate for bench development, not a customer deployment until the production hardware-root-of-trust and secure-boot gates in that guide are met.
 
 ## Manufacturing and provisioning gates
 

@@ -1,0 +1,33 @@
+name: Backend and firmware CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore verixora-initial.sln
+      - run: dotnet build verixora-initial.sln --no-restore --configuration Release
+      - run: dotnet test verixora-initial.sln --no-build --no-restore --configuration Release
+      - run: docker build -f api-host/ApiHost/Dockerfile -t verixora-api:ci .
+
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check platformio
+      - run: pio run
+        working-directory: firmware/esp32-door-controller

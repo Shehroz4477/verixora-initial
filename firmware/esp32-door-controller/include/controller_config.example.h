@@ -1,7 +1,8 @@
 #pragma once
 
 // Do not place production credentials in source control. The installer writes these values to
-// encrypted NVS after a physically-local, one-time provisioning session.
+// NVS after a physically-local, one-time provisioning session. Production deployment must enable
+// ESP-IDF Flash Encryption so these at-rest values are not readable from flash.
 constexpr int kLockRelayPin = 26;
 constexpr int kDoorContactPin = 27;
 constexpr int kTamperPin = 33;
