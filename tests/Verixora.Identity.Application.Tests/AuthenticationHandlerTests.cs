@@ -1,6 +1,7 @@
 using BuildingBlocks.Domain;
 using Identity.Application;
 using Identity.Domain;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace Verixora.Identity.Application.Tests;
@@ -13,15 +14,19 @@ public sealed class AuthenticationHandlerTests
         var repository = new InMemoryUserRepository();
         var otpService = new TestOtpService { RegistrationOtpIsValid = true };
         var handler = new RegisterUserCommandHandler(repository, new TestPasswordHasher(), otpService);
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
+        var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(publicKey);
 
         var result = await handler.Handle(
-            new RegisterUserCommand("+923001234567", "Password!1", "Password!1", "123456", "device-1", "thumbprint-1"),
+            new RegisterUserCommand("+923001234567", "Password!1", "Password!1", "123456", "device-1", thumbprint, publicKey),
             TestContext.Current.CancellationToken);
 
         var user = Assert.Single(repository.Users);
         Assert.Equal(result.UserId, user.Id);
         Assert.Equal("device-1", user.TrustedDevice!.DeviceId);
-        Assert.Equal("thumbprint-1", user.TrustedDevice.DeviceFingerprint);
+        Assert.Equal(thumbprint, user.TrustedDevice.DeviceFingerprint);
+        Assert.Equal(publicKey, user.TrustedDevice.DevicePublicKeySpkiBase64);
     }
 
     [Fact]
@@ -38,6 +43,38 @@ public sealed class AuthenticationHandlerTests
             TestContext.Current.CancellationToken));
 
         Assert.Equal("This account can only be used from its registered mobile device.", exception.Message);
+    }
+
+    [Fact]
+    public async Task Registration_rejects_a_fingerprint_that_does_not_match_the_p256_device_key()
+    {
+        var handler = new RegisterUserCommandHandler(new InMemoryUserRepository(), new TestPasswordHasher(), new TestOtpService { RegistrationOtpIsValid = true });
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
+
+        var exception = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new RegisterUserCommand("+923001234567", "Password!1", "Password!1", "123456", "device-1", "wrong-thumbprint", publicKey),
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal("The mobile device fingerprint does not match its public key.", exception.Message);
+    }
+
+    [Fact]
+    public async Task Login_recovers_the_key_after_reinstall_only_on_the_same_registered_device()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("+923001234567", "hash:Password!1");
+        user.RegisterTrustedDevice("device-1", "old-fingerprint");
+        await repository.AddAsync(user, TestContext.Current.CancellationToken);
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
+        var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(publicKey);
+        var handler = new LoginCommandHandler(repository, new TestPasswordHasher(), new TestOtpService { LoginOtpIsValid = true }, new TestJwtGenerator());
+
+        await handler.Handle(new LoginCommand("+923001234567", "Password!1", "123456", "device-1", thumbprint, publicKey), TestContext.Current.CancellationToken);
+
+        Assert.Equal(thumbprint, user.TrustedDevice!.DeviceFingerprint);
+        Assert.Equal(publicKey, user.TrustedDevice.DevicePublicKeySpkiBase64);
     }
 
     private sealed class InMemoryUserRepository : IUserRepository

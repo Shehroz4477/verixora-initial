@@ -7,6 +7,8 @@ public class TrustedDevice : Entity
     public Guid UserId { get; private set; }
     public string DeviceId { get; private set; }
     public string DeviceFingerprint { get; private set; }
+    public string? DevicePublicKeySpkiBase64 { get; private set; }
+    public string? DevicePublicKeyThumbprint { get; private set; }
     public DateTime RegisteredAt { get; private set; }
     public bool IsActive { get; private set; }
 
@@ -19,12 +21,17 @@ public class TrustedDevice : Entity
         DeviceFingerprint = null!;
     }
 
-    public TrustedDevice(Guid userId, string deviceId, string deviceFingerprint)
+    public TrustedDevice(Guid userId, string deviceId, string deviceFingerprint, string? devicePublicKeySpkiBase64 = null)
     {
         Id = Guid.NewGuid();
         UserId = userId;
         DeviceId = deviceId ?? throw new ArgumentNullException(nameof(deviceId));
         DeviceFingerprint = deviceFingerprint ?? throw new ArgumentNullException(nameof(deviceFingerprint));
+        if (!string.IsNullOrWhiteSpace(devicePublicKeySpkiBase64))
+        {
+            DevicePublicKeySpkiBase64 = devicePublicKeySpkiBase64;
+            DevicePublicKeyThumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(devicePublicKeySpkiBase64);
+        }
         RegisteredAt = DateTime.UtcNow;
         IsActive = true;
     }
@@ -35,7 +42,9 @@ public class TrustedDevice : Entity
         string deviceId,
         string deviceFingerprint,
         DateTime registeredAt,
-        bool isActive)
+        bool isActive,
+        string? devicePublicKeySpkiBase64 = null,
+        string? devicePublicKeyThumbprint = null)
     {
         return new TrustedDevice
         {
@@ -43,6 +52,8 @@ public class TrustedDevice : Entity
             UserId = userId,
             DeviceId = deviceId,
             DeviceFingerprint = deviceFingerprint,
+            DevicePublicKeySpkiBase64 = devicePublicKeySpkiBase64,
+            DevicePublicKeyThumbprint = devicePublicKeyThumbprint,
             RegisteredAt = registeredAt,
             IsActive = isActive
         };
@@ -56,5 +67,17 @@ public class TrustedDevice : Entity
     public void Activate()
     {
         IsActive = true;
+    }
+
+    public void RotatePublicKey(string deviceFingerprint, string devicePublicKeySpkiBase64)
+    {
+        var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(devicePublicKeySpkiBase64);
+        if (!string.Equals(thumbprint, deviceFingerprint, StringComparison.Ordinal))
+            throw new BuildingBlocks.Domain.DomainException("The mobile device fingerprint does not match its public key.");
+
+        DeviceFingerprint = deviceFingerprint;
+        DevicePublicKeySpkiBase64 = devicePublicKeySpkiBase64;
+        DevicePublicKeyThumbprint = thumbprint;
+        RegisteredAt = DateTime.UtcNow;
     }
 }

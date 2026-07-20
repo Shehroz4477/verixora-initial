@@ -10,4 +10,4 @@ public record UnlockDoorCommand(
     string IdempotencyKey
 ) : IRequest<UnlockDoorResult>;
 
-public record UnlockDoorResult(bool Success, string Message);
+public record UnlockDoorResult(bool Success, string Message, Guid? CommandId = null);

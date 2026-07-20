@@ -76,12 +76,12 @@ public class User : Entity, IAggregateRoot
         AddDomainEvent(new EmailVerifiedDomainEvent(Id, Email));
     }
 
-    public void RegisterTrustedDevice(string deviceId, string fingerprint)
+    public void RegisterTrustedDevice(string deviceId, string fingerprint, string? devicePublicKeySpkiBase64 = null)
     {
         if (TrustedDevice is not null && TrustedDevice.IsActive)
             throw new DomainException("A trusted device is already registered. Contact support to switch devices.");
 
-        var device = new TrustedDevice(Id, deviceId, fingerprint);
+        var device = new TrustedDevice(Id, deviceId, fingerprint, devicePublicKeySpkiBase64);
         TrustedDevice = device;
         AddDomainEvent(new TrustedDeviceRegisteredDomainEvent(Id, deviceId));
     }
@@ -89,5 +89,13 @@ public class User : Entity, IAggregateRoot
     public void DeactivateTrustedDevice()
     {
         TrustedDevice?.Deactivate();
+    }
+
+    public void RefreshTrustedDevicePublicKey(string deviceId, string deviceFingerprint, string devicePublicKeySpkiBase64)
+    {
+        if (TrustedDevice is not { IsActive: true } || !string.Equals(TrustedDevice.DeviceId, deviceId, StringComparison.Ordinal))
+            throw new DomainException("Only the already registered mobile device can refresh its security key.");
+
+        TrustedDevice.RotatePublicKey(deviceFingerprint, devicePublicKeySpkiBase64);
     }
 }

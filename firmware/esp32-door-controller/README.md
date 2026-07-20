@@ -9,7 +9,7 @@ This firmware is deliberately fail-closed. It accepts an unlock only when all of
 - the tamper input is normal; and
 - verified phone-presence proof is supplied by the companion Android app.
 
-The current phone-presence hook returns `false` until the Android Keystore BLE challenge-response implementation is delivered. This is intentional: a MAC address, RSSI, motion sensor, or static fingerprint cannot prove an authorized user's presence.
+For every short-lived unlock command, the controller advertises a BLE GATT service only while the command is pending. The Android app reads a random controller challenge, signs the canonical payload with its non-exportable Android Keystore P-256 key, and writes the DER signature back. The controller verifies it against the public key delivered with the authenticated command, then and only then pulses the relay. A MAC address, RSSI, motion sensor, or static fingerprint is never accepted as proof.
 
 ## Required production hardware
 
@@ -28,5 +28,11 @@ The current phone-presence hook returns `false` until the Android Keystore BLE c
 The backend accepts both P-256 DER signatures emitted by mbedTLS and 64-byte IEEE-P1363 signatures. The canonical acknowledgement payload is:
 
 `Verixora.ControllerAck.v1|{deviceId:N}|{commandId:N}|{Unlocked|Failed}|{occurredAtUtc:O}|{nonce}`
+
+The Android BLE presence payload is:
+
+`Verixora.BlePresence.v1|{controllerDeviceId:N}|{commandId:N}|{randomChallenge}|{expiresAtUnixTimeSeconds}`
+
+BLE proves possession of the trusted device key in the controller's radio range. It is not cryptographic distance-bounding; deployment sites with high relay-attack risk should add a UWB/NFC physical-tap policy or a supervised local reader.
 
 Do not deploy this firmware until the BLE phone-presence proof and the physical installation have been independently tested on the selected lock hardware.

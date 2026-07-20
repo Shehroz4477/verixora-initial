@@ -4,6 +4,8 @@ using Devices.Application;
 using Devices.Domain;
 using FaceVerification.Domain;
 using Homes.Application;
+using Identity.Application;
+using Identity.Domain;
 using SmartLocks.Application;
 using SmartLocks.Domain;
 using System.Security.Cryptography;
@@ -52,7 +54,8 @@ public sealed class SmartLockSecurityHandlerTests
             audit,
             new InMemoryDeviceRepository(controller),
             new FixedHomeRepository(new HomeSummary(homeId, "Main Home", ownerId, "Owner", 20, DateTime.UtcNow)),
-            new InMemoryLockCommandRepository());
+            new InMemoryLockCommandRepository(),
+            new FixedUserRepository(CreateTrustedUser(ownerId)));
 
         var result = await handler.Handle(
             new UnlockDoorCommand(smartLock.Id, ownerId, "Owner", null, "command-1"),
@@ -63,6 +66,7 @@ public sealed class SmartLockSecurityHandlerTests
         Assert.Equal(LockStatus.Locked, smartLock.Status);
         Assert.Equal($"{controller.MqttTopic}/commands", mqtt.Topic);
         Assert.Contains("commandId", mqtt.Payload);
+        Assert.Contains("trustedMobilePublicKeySpkiBase64", mqtt.Payload);
         var eventEntry = Assert.Single(audit.Events);
         Assert.True(eventEntry.Result);
         Assert.Equal("UnlockCommand", eventEntry.Action);
@@ -167,6 +171,27 @@ public sealed class SmartLockSecurityHandlerTests
         public Task<HomeSummary> AddAsync(Homes.Domain.Home home, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<HomeSummary>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<HomeSummary>>(homes.Where(home => home.OwnerId == userId).ToList());
+    }
+
+    private static User CreateTrustedUser(Guid userId)
+        => User.Rehydrate(
+            userId,
+            "+923001234567",
+            "test-hash",
+            null,
+            false,
+            UserRole.Owner,
+            DateTime.UtcNow,
+            TrustedDevice.Rehydrate(Guid.NewGuid(), userId, "mobile-device", "mobile-thumbprint", DateTime.UtcNow, true, "test-mobile-public-key", "test-mobile-thumbprint"));
+
+    private sealed class FixedUserRepository(params User[] users) : IUserRepository
+    {
+        public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(users.SingleOrDefault(user => user.Id == id));
+        public Task<User?> GetByPhoneNumberAsync(string phoneNumber, CancellationToken cancellationToken = default) => Task.FromResult(users.SingleOrDefault(user => user.PhoneNumber == phoneNumber));
+        public Task<bool> PhoneNumberExistsAsync(string phoneNumber, CancellationToken cancellationToken = default) => Task.FromResult(users.Any(user => user.PhoneNumber == phoneNumber));
+        public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) => Task.FromResult(users.SingleOrDefault(user => user.Email == email));
+        public Task AddAsync(User user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateAsync(User user, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class AllowOwnerAuthorizationService : IAuthorizationService

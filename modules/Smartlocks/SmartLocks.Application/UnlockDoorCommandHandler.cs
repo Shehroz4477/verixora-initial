@@ -4,6 +4,7 @@ using Devices.Application;
 using Devices.Domain;
 using FaceVerification.Domain;
 using Homes.Application;
+using Identity.Application;
 using MediatR;
 using SmartLocks.Domain;
 using System.Text.Json;
@@ -20,6 +21,7 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
     private readonly IDeviceRepository _deviceRepository;
     private readonly IHomeRepository _homeRepository;
     private readonly ILockCommandRepository _commandRepository;
+    private readonly IUserRepository _userRepository;
 
     public UnlockDoorCommandHandler(
         ISmartLockRepository lockRepository,
@@ -29,7 +31,8 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
         IAuditLogService auditLogService,
         IDeviceRepository deviceRepository,
         IHomeRepository homeRepository,
-        ILockCommandRepository commandRepository)
+        ILockCommandRepository commandRepository,
+        IUserRepository userRepository)
     {
         _lockRepository = lockRepository;
         _authService = authService;
@@ -39,6 +42,7 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
         _deviceRepository = deviceRepository;
         _homeRepository = homeRepository;
         _commandRepository = commandRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<UnlockDoorResult> Handle(UnlockDoorCommand request, CancellationToken cancellationToken)
@@ -81,6 +85,13 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             throw new DomainException("Access denied by authorization policy.");
         }
 
+        var trustedMobile = (await _userRepository.GetByIdAsync(request.UserId, cancellationToken))?.TrustedDevice;
+        if (trustedMobile is not { IsActive: true } || string.IsNullOrWhiteSpace(trustedMobile.DevicePublicKeySpkiBase64))
+        {
+            await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Trusted mobile device has no cryptographic presence key");
+            throw new DomainException("This account must refresh its trusted mobile-device security key before remotely unlocking a door.");
+        }
+
         if (smartLock.RequiresFace)
         {
             if (request.FaceImageStream is null)
@@ -114,9 +125,9 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             cancellationToken);
 
         if (command.Status is LockCommandStatus.Acknowledged or LockCommandStatus.Failed or LockCommandStatus.Expired)
-            return new UnlockDoorResult(command.Status == LockCommandStatus.Acknowledged, $"This unlock request was already processed: {command.Status}.");
+            return new UnlockDoorResult(command.Status == LockCommandStatus.Acknowledged, $"This unlock request was already processed: {command.Status}.", command.Id);
         if (command.Status == LockCommandStatus.Published)
-            return new UnlockDoorResult(true, "Unlock command was already delivered and is awaiting controller acknowledgement.");
+            return new UnlockDoorResult(true, "Unlock command was already delivered and is awaiting controller acknowledgement.", command.Id);
 
         var payload = JsonSerializer.Serialize(new
         {
@@ -125,7 +136,9 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             commandId = command.Id,
             requestedAtUtc = command.RequestedAtUtc,
             expiresAtUtc = command.ExpiresAtUtc,
-            expiresAtUnixTimeSeconds = new DateTimeOffset(command.ExpiresAtUtc).ToUnixTimeSeconds()
+            expiresAtUnixTimeSeconds = new DateTimeOffset(command.ExpiresAtUtc).ToUnixTimeSeconds(),
+            trustedMobileDeviceId = trustedMobile.DeviceId,
+            trustedMobilePublicKeySpkiBase64 = trustedMobile.DevicePublicKeySpkiBase64
         });
         try
         {
@@ -135,10 +148,10 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
         catch (Exception)
         {
             await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", true, "Command stored in durable outbox; broker delivery is pending");
-            return new UnlockDoorResult(true, "Unlock command stored securely and is awaiting controller delivery. It expires automatically if not delivered.");
+            return new UnlockDoorResult(true, "Unlock command stored securely and is awaiting controller delivery. It expires automatically if not delivered.", command.Id);
         }
 
         await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", true, "Command accepted by MQTT broker; awaiting controller acknowledgement");
-        return new UnlockDoorResult(true, "Unlock command queued. The controller acknowledgement is pending.");
+        return new UnlockDoorResult(true, "Unlock command queued. Complete the nearby-device presence check before it expires.", command.Id);
     }
 }

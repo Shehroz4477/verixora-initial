@@ -15,6 +15,8 @@ internal sealed class PersistedUser
     public Guid? TrustedDeviceUserId { get; set; }
     public string? TrustedDeviceDeviceId { get; set; }
     public string? TrustedDeviceFingerprint { get; set; }
+    public string? TrustedDevicePublicKeySpkiBase64 { get; set; }
+    public string? TrustedDevicePublicKeyThumbprint { get; set; }
     public DateTime? TrustedDeviceRegisteredAtUtc { get; set; }
     public bool? TrustedDeviceIsActive { get; set; }
 
@@ -39,7 +41,9 @@ internal sealed class PersistedUser
                 TrustedDeviceDeviceId,
                 TrustedDeviceFingerprint,
                 TrustedDeviceRegisteredAtUtc.Value,
-                TrustedDeviceIsActive.Value);
+                TrustedDeviceIsActive.Value,
+                TrustedDevicePublicKeySpkiBase64,
+                TrustedDevicePublicKeyThumbprint);
         }
 
         return User.Rehydrate(Id, PhoneNumber, PasswordHash, Email, EmailVerified, role, CreatedAtUtc, device);
@@ -60,6 +64,8 @@ internal sealed class PersistedUser
             TrustedDeviceId = device?.Id,
             TrustedDeviceDeviceId = device?.DeviceId,
             TrustedDeviceFingerprint = device?.DeviceFingerprint,
+            TrustedDevicePublicKeySpkiBase64 = device?.DevicePublicKeySpkiBase64,
+            TrustedDevicePublicKeyThumbprint = device?.DevicePublicKeyThumbprint,
             TrustedDeviceRegisteredAtUtc = device?.RegisteredAt,
             TrustedDeviceIsActive = device?.IsActive
         };

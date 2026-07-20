@@ -57,6 +57,8 @@ public class IdentityDbContext : DbContext
             entity.Property(d => d.DeviceId).HasColumnName(isPostgreSql ? "device_id" : "DeviceId");
             entity.Property(d => d.DeviceFingerprint).IsRequired().HasMaxLength(512);
             entity.Property(d => d.DeviceFingerprint).HasColumnName(isPostgreSql ? "device_fingerprint" : "DeviceFingerprint");
+            entity.Property(d => d.DevicePublicKeySpkiBase64).HasColumnName(isPostgreSql ? "device_public_key_spki_base64" : "DevicePublicKeySpkiBase64");
+            entity.Property(d => d.DevicePublicKeyThumbprint).HasColumnName(isPostgreSql ? "device_public_key_thumbprint" : "DevicePublicKeyThumbprint");
             entity.Property(d => d.RegisteredAt).IsRequired();
             entity.Property(d => d.RegisteredAt).HasColumnName(isPostgreSql ? "registered_at_utc" : "RegisteredAtUtc");
             entity.Property(d => d.IsActive).IsRequired();

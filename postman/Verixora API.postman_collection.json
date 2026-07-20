@@ -10,7 +10,8 @@
     { "key": "phoneNumber", "value": "+923001234567" },
     { "key": "password", "value": "ChangeMe123!" },
     { "key": "deviceId", "value": "replace-with-a-unique-android-device-id" },
-    { "key": "deviceFingerprint", "value": "replace-with-device-binding-key-thumbprint" },
+    { "key": "deviceFingerprint", "value": "replace-with-Base64Url-SHA256-of-device-public-key-SPKI" },
+    { "key": "devicePublicKeySpkiBase64", "value": "replace-with-Android-Keystore-P256-public-key-SPKI-Base64" },
     { "key": "registrationOtp", "value": "" },
     { "key": "loginOtp", "value": "" },
     { "key": "email", "value": "owner@example.test" },
@@ -43,7 +44,7 @@
         },
         {
           "name": "Register device-bound user",
-          "request": { "method": "POST", "url": "{{baseUrl}}/auth/register", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"password\": \"{{password}}\",\n  \"confirmPassword\": \"{{password}}\",\n  \"otp\": \"{{registrationOtp}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceFingerprint\": \"{{deviceFingerprint}}\"\n}" } },
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/register", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"password\": \"{{password}}\",\n  \"confirmPassword\": \"{{password}}\",\n  \"otp\": \"{{registrationOtp}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceFingerprint\": \"{{deviceFingerprint}}\",\n  \"devicePublicKeySpkiBase64\": \"{{devicePublicKeySpkiBase64}}\"\n}" } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('User identifier is returned', () => pm.expect(body.userId).to.be.a('string').and.not.empty);", "pm.collectionVariables.set('userId', body.userId);"] } }]
         },
         {
@@ -63,7 +64,7 @@
         },
         {
           "name": "Login from registered device",
-          "request": { "method": "POST", "url": "{{baseUrl}}/auth/login", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"password\": \"{{password}}\",\n  \"otp\": \"{{loginOtp}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceFingerprint\": \"{{deviceFingerprint}}\"\n}" } },
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/login", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"password\": \"{{password}}\",\n  \"otp\": \"{{loginOtp}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceFingerprint\": \"{{deviceFingerprint}}\",\n  \"devicePublicKeySpkiBase64\": \"{{devicePublicKeySpkiBase64}}\"\n}" } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Login succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('JWT is returned', () => pm.expect(body.token).to.be.a('string').and.not.empty);", "pm.collectionVariables.set('accessToken', body.token);", "pm.collectionVariables.set('userId', body.userId);"] } }]
         }
       ]

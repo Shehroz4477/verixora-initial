@@ -41,7 +41,7 @@ public sealed class DapperUserRepository(DbConnectionFactory connectionFactory) 
                 return;
             case "PostgreSql":
                 await connection.ExecuteAsync(new CommandDefinition(
-                    "select identity.fn_create_user(@Id, @PhoneNumber, @PasswordHash, @Email, @EmailVerified, @Role, @CreatedAtUtc, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)",
+                    "select identity.fn_create_user(@Id, @PhoneNumber, @PasswordHash, @Email, @EmailVerified, @Role, @CreatedAtUtc, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDevicePublicKeySpkiBase64, @TrustedDevicePublicKeyThumbprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)",
                     parameters,
                     cancellationToken: cancellationToken));
                 return;
@@ -61,7 +61,7 @@ public sealed class DapperUserRepository(DbConnectionFactory connectionFactory) 
                 return;
             case "PostgreSql":
                 await connection.ExecuteAsync(new CommandDefinition(
-                    "select identity.fn_update_user(@Id, @PasswordHash, @Email, @EmailVerified, @Role, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)",
+                    "select identity.fn_update_user(@Id, @PasswordHash, @Email, @EmailVerified, @Role, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDevicePublicKeySpkiBase64, @TrustedDevicePublicKeyThumbprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)",
                     parameters,
                     cancellationToken: cancellationToken));
                 return;
@@ -83,7 +83,7 @@ public sealed class DapperUserRepository(DbConnectionFactory connectionFactory) 
             "SqlServer" => await connection.QuerySingleOrDefaultAsync<PersistedUser>(new CommandDefinition(
                 sqlServerRoutine, parameters, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
             "PostgreSql" => await connection.QuerySingleOrDefaultAsync<PersistedUser>(new CommandDefinition(
-                $"select id as \"Id\", phone_number as \"PhoneNumber\", password_hash as \"PasswordHash\", email as \"Email\", email_verified as \"EmailVerified\", role as \"Role\", created_at_utc as \"CreatedAtUtc\", trusted_device_id as \"TrustedDeviceId\", trusted_device_user_id as \"TrustedDeviceUserId\", trusted_device_device_id as \"TrustedDeviceDeviceId\", trusted_device_fingerprint as \"TrustedDeviceFingerprint\", trusted_device_registered_at_utc as \"TrustedDeviceRegisteredAtUtc\", trusted_device_is_active as \"TrustedDeviceIsActive\" from {postgreSqlRoutine}(@{parameterName})",
+                $"select id as \"Id\", phone_number as \"PhoneNumber\", password_hash as \"PasswordHash\", email as \"Email\", email_verified as \"EmailVerified\", role as \"Role\", created_at_utc as \"CreatedAtUtc\", trusted_device_id as \"TrustedDeviceId\", trusted_device_user_id as \"TrustedDeviceUserId\", trusted_device_device_id as \"TrustedDeviceDeviceId\", trusted_device_fingerprint as \"TrustedDeviceFingerprint\", trusted_device_public_key_spki_base64 as \"TrustedDevicePublicKeySpkiBase64\", trusted_device_public_key_thumbprint as \"TrustedDevicePublicKeyThumbprint\", trusted_device_registered_at_utc as \"TrustedDeviceRegisteredAtUtc\", trusted_device_is_active as \"TrustedDeviceIsActive\" from {postgreSqlRoutine}(@{parameterName})",
                 parameters,
                 cancellationToken: cancellationToken)),
             _ => throw UnsupportedProvider()

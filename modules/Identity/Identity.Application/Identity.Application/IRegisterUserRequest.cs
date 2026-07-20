@@ -6,5 +6,6 @@ public record RegisterUserRequest(
     string ConfirmPassword,
     string DeviceId,
     string DeviceFingerprint,
+    string DevicePublicKeySpkiBase64,
     string? Email = null
 );

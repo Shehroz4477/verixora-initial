@@ -29,9 +29,7 @@ public class SendLoginOtpCommandHandler : IRequestHandler<SendLoginOtpCommand, S
             throw new DomainException("Invalid phone number or password.");
 
         var registered = user.TrustedDevice;
-        if (registered is not { IsActive: true } ||
-            !FixedTimeEquals(registered.DeviceId, request.DeviceId) ||
-            !FixedTimeEquals(registered.DeviceFingerprint, request.DeviceFingerprint))
+        if (registered is not { IsActive: true } || !FixedTimeEquals(registered.DeviceId, request.DeviceId))
         {
             throw new DomainException("This account can only be used from its registered mobile device.");
         }

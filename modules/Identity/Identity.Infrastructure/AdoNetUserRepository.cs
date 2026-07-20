@@ -35,10 +35,10 @@ public sealed class AdoNetUserRepository(DbConnectionFactory connectionFactory) 
         => (await GetUserAsync("identity.sp_GetUserByEmail", "identity.fn_get_user_by_email", "Email", email, cancellationToken))?.ToDomain();
 
     public async Task AddAsync(User user, CancellationToken cancellationToken = default)
-        => await SaveUserAsync("identity.sp_CreateUser", "select identity.fn_create_user(@Id, @PhoneNumber, @PasswordHash, @Email, @EmailVerified, @Role, @CreatedAtUtc, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)", user, includeImmutableFields: true, cancellationToken);
+        => await SaveUserAsync("identity.sp_CreateUser", "select identity.fn_create_user(@Id, @PhoneNumber, @PasswordHash, @Email, @EmailVerified, @Role, @CreatedAtUtc, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDevicePublicKeySpkiBase64, @TrustedDevicePublicKeyThumbprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)", user, includeImmutableFields: true, cancellationToken);
 
     public async Task UpdateAsync(User user, CancellationToken cancellationToken = default)
-        => await SaveUserAsync("identity.sp_UpdateUser", "select identity.fn_update_user(@Id, @PasswordHash, @Email, @EmailVerified, @Role, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)", user, includeImmutableFields: false, cancellationToken);
+        => await SaveUserAsync("identity.sp_UpdateUser", "select identity.fn_update_user(@Id, @PasswordHash, @Email, @EmailVerified, @Role, @TrustedDeviceId, @TrustedDeviceDeviceId, @TrustedDeviceFingerprint, @TrustedDevicePublicKeySpkiBase64, @TrustedDevicePublicKeyThumbprint, @TrustedDeviceRegisteredAtUtc, @TrustedDeviceIsActive)", user, includeImmutableFields: false, cancellationToken);
 
     private async Task<PersistedUser?> GetUserAsync(
         string sqlServerRoutine,
@@ -53,7 +53,7 @@ public sealed class AdoNetUserRepository(DbConnectionFactory connectionFactory) 
         command.CommandText = connectionFactory.Provider switch
         {
             "SqlServer" => sqlServerRoutine,
-            "PostgreSql" => $"select id as \"Id\", phone_number as \"PhoneNumber\", password_hash as \"PasswordHash\", email as \"Email\", email_verified as \"EmailVerified\", role as \"Role\", created_at_utc as \"CreatedAtUtc\", trusted_device_id as \"TrustedDeviceId\", trusted_device_user_id as \"TrustedDeviceUserId\", trusted_device_device_id as \"TrustedDeviceDeviceId\", trusted_device_fingerprint as \"TrustedDeviceFingerprint\", trusted_device_registered_at_utc as \"TrustedDeviceRegisteredAtUtc\", trusted_device_is_active as \"TrustedDeviceIsActive\" from {postgreSqlRoutine}(@{parameterName})",
+            "PostgreSql" => $"select id as \"Id\", phone_number as \"PhoneNumber\", password_hash as \"PasswordHash\", email as \"Email\", email_verified as \"EmailVerified\", role as \"Role\", created_at_utc as \"CreatedAtUtc\", trusted_device_id as \"TrustedDeviceId\", trusted_device_user_id as \"TrustedDeviceUserId\", trusted_device_device_id as \"TrustedDeviceDeviceId\", trusted_device_fingerprint as \"TrustedDeviceFingerprint\", trusted_device_public_key_spki_base64 as \"TrustedDevicePublicKeySpkiBase64\", trusted_device_public_key_thumbprint as \"TrustedDevicePublicKeyThumbprint\", trusted_device_registered_at_utc as \"TrustedDeviceRegisteredAtUtc\", trusted_device_is_active as \"TrustedDeviceIsActive\" from {postgreSqlRoutine}(@{parameterName})",
             _ => throw UnsupportedProvider()
         };
         command.CommandType = connectionFactory.Provider == "SqlServer" ? CommandType.StoredProcedure : CommandType.Text;
@@ -100,6 +100,8 @@ public sealed class AdoNetUserRepository(DbConnectionFactory connectionFactory) 
             TrustedDeviceUserId = GetNullableGuid(reader, "TrustedDeviceUserId"),
             TrustedDeviceDeviceId = GetNullableString(reader, "TrustedDeviceDeviceId"),
             TrustedDeviceFingerprint = GetNullableString(reader, "TrustedDeviceFingerprint"),
+            TrustedDevicePublicKeySpkiBase64 = GetNullableString(reader, "TrustedDevicePublicKeySpkiBase64"),
+            TrustedDevicePublicKeyThumbprint = GetNullableString(reader, "TrustedDevicePublicKeyThumbprint"),
             TrustedDeviceRegisteredAtUtc = GetNullableDateTime(reader, "TrustedDeviceRegisteredAtUtc"),
             TrustedDeviceIsActive = GetNullableBoolean(reader, "TrustedDeviceIsActive")
         };
@@ -121,6 +123,8 @@ public sealed class AdoNetUserRepository(DbConnectionFactory connectionFactory) 
         AddParameter(command, "TrustedDeviceId", user.TrustedDevice?.Id);
         AddParameter(command, "TrustedDeviceDeviceId", user.TrustedDevice?.DeviceId);
         AddParameter(command, "TrustedDeviceFingerprint", user.TrustedDevice?.DeviceFingerprint);
+        AddParameter(command, "TrustedDevicePublicKeySpkiBase64", user.TrustedDevice?.DevicePublicKeySpkiBase64);
+        AddParameter(command, "TrustedDevicePublicKeyThumbprint", user.TrustedDevice?.DevicePublicKeyThumbprint);
         AddParameter(command, "TrustedDeviceRegisteredAtUtc", user.TrustedDevice?.RegisteredAt);
         AddParameter(command, "TrustedDeviceIsActive", user.TrustedDevice?.IsActive);
     }

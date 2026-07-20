@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Devices.Application;
 using Devices.Domain;
+using Identity.Application;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,12 +28,19 @@ public sealed class LockCommandOutboxDispatcher(IServiceScopeFactory scopeFactor
         using var scope = scopeFactory.CreateScope();
         var commands = scope.ServiceProvider.GetRequiredService<ILockCommandRepository>();
         var devices = scope.ServiceProvider.GetRequiredService<IDeviceRepository>();
+        var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         var mqtt = scope.ServiceProvider.GetRequiredService<IMqttPublisher>();
         foreach (var command in await commands.GetQueuedForDispatchAsync(25, cancellationToken))
         {
             var device = await devices.GetByIdAsync(command.DeviceId, cancellationToken);
             if (device?.Status != DeviceStatus.Online)
                 continue;
+            var trustedMobile = (await users.GetByIdAsync(command.RequestedBy, cancellationToken))?.TrustedDevice;
+            if (trustedMobile is not { IsActive: true } || string.IsNullOrWhiteSpace(trustedMobile.DevicePublicKeySpkiBase64))
+            {
+                logger.LogWarning("Command {CommandId} cannot be delivered because its mobile presence key is unavailable.", command.Id);
+                continue;
+            }
 
             var payload = JsonSerializer.Serialize(new
             {
@@ -41,7 +49,9 @@ public sealed class LockCommandOutboxDispatcher(IServiceScopeFactory scopeFactor
                 commandId = command.Id,
                 requestedAtUtc = command.RequestedAtUtc,
                 expiresAtUtc = command.ExpiresAtUtc,
-                expiresAtUnixTimeSeconds = new DateTimeOffset(command.ExpiresAtUtc).ToUnixTimeSeconds()
+                expiresAtUnixTimeSeconds = new DateTimeOffset(command.ExpiresAtUtc).ToUnixTimeSeconds(),
+                trustedMobileDeviceId = trustedMobile.DeviceId,
+                trustedMobilePublicKeySpkiBase64 = trustedMobile.DevicePublicKeySpkiBase64
             });
             try
             {

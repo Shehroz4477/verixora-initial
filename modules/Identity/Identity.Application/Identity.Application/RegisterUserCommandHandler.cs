@@ -1,6 +1,8 @@
 using BuildingBlocks.Domain;
 using Identity.Domain;
 using MediatR;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Identity.Application;
 
@@ -27,8 +29,12 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         if (request.Password != request.ConfirmPassword)
             throw new DomainException("Passwords do not match.");
 
-        if (string.IsNullOrWhiteSpace(request.DeviceId) || string.IsNullOrWhiteSpace(request.DeviceFingerprint))
-            throw new DomainException("A device binding is required to register an account.");
+        if (string.IsNullOrWhiteSpace(request.DeviceId) || string.IsNullOrWhiteSpace(request.DeviceFingerprint) || string.IsNullOrWhiteSpace(request.DevicePublicKeySpkiBase64))
+            throw new DomainException("A cryptographic device binding is required to register an account.");
+
+        var publicKeyThumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(request.DevicePublicKeySpkiBase64);
+        if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(publicKeyThumbprint), Encoding.UTF8.GetBytes(request.DeviceFingerprint)))
+            throw new DomainException("The mobile device fingerprint does not match its public key.");
 
         // Check uniqueness of phone number
         if (await _userRepository.PhoneNumberExistsAsync(request.PhoneNumber, cancellationToken))
@@ -44,7 +50,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         if (!string.IsNullOrWhiteSpace(request.Email))
             user.SetEmail(request.Email);
 
-        user.RegisterTrustedDevice(request.DeviceId.Trim(), request.DeviceFingerprint.Trim());
+        user.RegisterTrustedDevice(request.DeviceId.Trim(), request.DeviceFingerprint.Trim(), request.DevicePublicKeySpkiBase64.Trim());
 
         // Save
         await _userRepository.AddAsync(user, cancellationToken);

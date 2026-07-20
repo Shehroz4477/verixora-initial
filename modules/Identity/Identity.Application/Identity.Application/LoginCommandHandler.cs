@@ -31,12 +31,21 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new DomainException("Invalid phone number or password.");
 
-        if (!MatchesTrustedDevice(user, request.DeviceId, request.DeviceFingerprint))
+        if (!MatchesTrustedDeviceId(user, request.DeviceId))
             throw new DomainException("This account can only be used from its registered mobile device.");
 
         // Validate OTP
         if (!await _otpService.ValidateLoginOtpAsync(request.PhoneNumber, request.Otp))
             throw new DomainException("Invalid or expired OTP.");
+
+        if (!MatchesTrustedDeviceFingerprint(user, request.DeviceFingerprint))
+        {
+            if (string.IsNullOrWhiteSpace(request.DevicePublicKeySpkiBase64))
+                throw new DomainException("The trusted device security key changed. Reinstall recovery requires the new Android Keystore public key.");
+
+            user.RefreshTrustedDevicePublicKey(request.DeviceId, request.DeviceFingerprint, request.DevicePublicKeySpkiBase64.Trim());
+            await _userRepository.UpdateAsync(user, cancellationToken);
+        }
 
         // Generate JWT
         var token = _jwtTokenGenerator.GenerateToken(user.Id, user.PhoneNumber, user.Role.ToString());
@@ -44,13 +53,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
         return new LoginResult(user.Id, token);
     }
 
-    private static bool MatchesTrustedDevice(User user, string deviceId, string deviceFingerprint)
+    private static bool MatchesTrustedDeviceId(User user, string deviceId)
     {
         var registered = user.TrustedDevice;
         return registered is { IsActive: true } &&
-               FixedTimeEquals(registered.DeviceId, deviceId) &&
-               FixedTimeEquals(registered.DeviceFingerprint, deviceFingerprint);
+               FixedTimeEquals(registered.DeviceId, deviceId);
     }
+
+    private static bool MatchesTrustedDeviceFingerprint(User user, string deviceFingerprint)
+        => user.TrustedDevice is { IsActive: true } registered && FixedTimeEquals(registered.DeviceFingerprint, deviceFingerprint);
 
     private static bool FixedTimeEquals(string expected, string actual)
         => CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(actual ?? string.Empty));
