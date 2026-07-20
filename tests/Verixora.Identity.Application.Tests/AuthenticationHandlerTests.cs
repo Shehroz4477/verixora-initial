@@ -2,6 +2,7 @@ using BuildingBlocks.Domain;
 using Identity.Application;
 using Identity.Domain;
 using System.Security.Cryptography;
+using FluentValidation;
 using Xunit;
 
 namespace Verixora.Identity.Application.Tests;
@@ -97,6 +98,27 @@ public sealed class AuthenticationHandlerTests
             TestContext.Current.CancellationToken));
 
         Assert.Equal("This mobile device is already bound to an account.", exception.Message);
+    }
+
+    [Fact]
+    public void Phone_numbers_are_validated_and_normalized_as_E164()
+    {
+        Assert.True(InternationalPhoneNumber.TryNormalizeE164("+92 300 1234567", out var normalized));
+        Assert.Equal("+923001234567", normalized);
+        Assert.False(InternationalPhoneNumber.TryNormalizeE164("03001234567", out _));
+        Assert.False(InternationalPhoneNumber.TryNormalizeE164("+123", out _));
+    }
+
+    [Fact]
+    public async Task Registration_validator_rejects_an_invalid_country_number_before_the_handler()
+    {
+        var validator = new RegisterUserCommandValidator();
+        var result = await validator.ValidateAsync(new RegisterUserCommand(
+            "03001234567", "Password!1", "Password!1", "123456", "device-1", "fingerprint", "public-key"),
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(RegisterUserCommand.PhoneNumber));
     }
 
     [Fact]

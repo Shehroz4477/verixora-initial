@@ -24,7 +24,8 @@ public class SendLoginOtpCommandHandler : IRequestHandler<SendLoginOtpCommand, S
 
     public async Task<SendLoginOtpResult> Handle(SendLoginOtpCommand request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber, cancellationToken);
+        var phoneNumber = InternationalPhoneNumber.NormalizeE164(request.PhoneNumber);
+        var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new DomainException("Invalid phone number or password.");
 
@@ -34,7 +35,7 @@ public class SendLoginOtpCommandHandler : IRequestHandler<SendLoginOtpCommand, S
             throw new DomainException("This account can only be used from its registered mobile device.");
         }
 
-        await _otpService.SendLoginOtpAsync(request.PhoneNumber);
+        await _otpService.SendLoginOtpAsync(phoneNumber);
         return new SendLoginOtpResult(true, "OTP sent to phone.");
     }
 

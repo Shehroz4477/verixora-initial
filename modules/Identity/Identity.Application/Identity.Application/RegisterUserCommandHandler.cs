@@ -27,8 +27,10 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
 
     public async Task<RegisterUserResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
+        var phoneNumber = InternationalPhoneNumber.NormalizeE164(request.PhoneNumber);
+
         // Validate OTP
-        if (!await _otpService.ValidateRegistrationOtpAsync(request.PhoneNumber, request.Otp))
+        if (!await _otpService.ValidateRegistrationOtpAsync(phoneNumber, request.Otp))
             throw new DomainException("Invalid or expired OTP.");
 
         // Validate password match
@@ -43,7 +45,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             throw new DomainException("The mobile device fingerprint does not match its public key.");
 
         // Check uniqueness of phone number
-        if (await _userRepository.PhoneNumberExistsAsync(request.PhoneNumber, cancellationToken))
+        if (await _userRepository.PhoneNumberExistsAsync(phoneNumber, cancellationToken))
             throw new DomainException("Phone number already registered.");
 
         if (await _userRepository.TrustedDeviceIdExistsAsync(request.DeviceId.Trim(), cancellationToken))
@@ -53,10 +55,10 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         var passwordHash = _passwordHasher.Hash(request.Password);
 
         // Create user
-        var role = _systemAdministratorBootstrapPolicy?.IsBootstrapSystemAdministratorPhone(request.PhoneNumber) == true
+        var role = _systemAdministratorBootstrapPolicy?.IsBootstrapSystemAdministratorPhone(phoneNumber) == true
             ? UserRole.SystemAdmin
             : UserRole.Owner;
-        var user = new User(request.PhoneNumber, passwordHash, role);
+        var user = new User(phoneNumber, passwordHash, role);
 
         // Set email if provided
         if (!string.IsNullOrWhiteSpace(request.Email))

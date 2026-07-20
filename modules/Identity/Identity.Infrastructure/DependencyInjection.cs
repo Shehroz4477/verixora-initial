@@ -29,9 +29,7 @@ public static class DependencyInjection
                 _ = provider switch
                 {
                     "SqlServer" => options.UseSqlServer(connectionString),
-                    "MySql" => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)),
                     "PostgreSql" => options.UseNpgsql(connectionString),
-                    "Sqlite" => options.UseSqlite(connectionString),
                     _ => throw new NotSupportedException($"Database provider '{provider}' is not supported.")
                 };
 

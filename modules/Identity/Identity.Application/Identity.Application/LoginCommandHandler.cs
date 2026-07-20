@@ -27,7 +27,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
 
     public async Task<LoginResult> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber, cancellationToken);
+        var phoneNumber = InternationalPhoneNumber.NormalizeE164(request.PhoneNumber);
+        var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber, cancellationToken);
         if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new DomainException("Invalid phone number or password.");
 
@@ -35,7 +36,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
             throw new DomainException("This account can only be used from its registered mobile device.");
 
         // Validate OTP
-        if (!await _otpService.ValidateLoginOtpAsync(request.PhoneNumber, request.Otp))
+        if (!await _otpService.ValidateLoginOtpAsync(phoneNumber, request.Otp))
             throw new DomainException("Invalid or expired OTP.");
 
         if (!MatchesTrustedDeviceFingerprint(user, request.DeviceFingerprint))

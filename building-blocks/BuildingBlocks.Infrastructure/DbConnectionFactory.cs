@@ -1,7 +1,5 @@
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
-using MySql.Data.MySqlClient;
 using Npgsql;
 using Microsoft.Extensions.Configuration;
 
@@ -24,9 +22,7 @@ public class DbConnectionFactory
     public DbConnection CreateConnection() => _provider switch
     {
         "SqlServer" => new SqlConnection(_connectionString),
-        "MySql" => new MySqlConnection(_connectionString),
         "PostgreSql" => new NpgsqlConnection(_connectionString),
-        "Sqlite" => new SqliteConnection(_connectionString),
         _ => throw new NotSupportedException($"Database provider '{_provider}' is not supported.")
     };
 }

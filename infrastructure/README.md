@@ -24,3 +24,15 @@ It is intended for development only. All host ports bind to `127.0.0.1`, so they
 | MQTT | `127.0.0.1:1883` |
 
 Do not expose this compose stack publicly. Production services will use managed networking, secrets management, TLS, authentication, database roles, and per-device MQTT certificates.
+
+## Production data-protection keys
+
+The API deliberately refuses to start outside `Development` unless its ASP.NET Core data-protection keys are persisted and encrypted with a private-key certificate. Inject these values through the deployment secret store, never through source-controlled JSON:
+
+```text
+DataProtection__KeyRingPath=/var/lib/verixora/data-protection
+DataProtection__CertificatePath=/run/secrets/verixora-data-protection.pfx
+DataProtection__CertificatePassword=<secret>
+```
+
+The key-ring directory must be persistent and writable by the API service account. The PFX must contain a private key and be mounted read-only with restrictive permissions. Development intentionally uses ephemeral keys so no local credential or stale Windows DPAPI key can affect the API.
