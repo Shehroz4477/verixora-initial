@@ -11,12 +11,18 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpService _otpService;
+    private readonly ISystemAdministratorBootstrapPolicy? _systemAdministratorBootstrapPolicy;
 
-    public RegisterUserCommandHandler(IUserRepository userRepository, IPasswordHasher passwordHasher, IOtpService otpService)
+    public RegisterUserCommandHandler(
+        IUserRepository userRepository,
+        IPasswordHasher passwordHasher,
+        IOtpService otpService,
+        ISystemAdministratorBootstrapPolicy? systemAdministratorBootstrapPolicy = null)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _otpService = otpService;
+        _systemAdministratorBootstrapPolicy = systemAdministratorBootstrapPolicy;
     }
 
     public async Task<RegisterUserResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -40,11 +46,17 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         if (await _userRepository.PhoneNumberExistsAsync(request.PhoneNumber, cancellationToken))
             throw new DomainException("Phone number already registered.");
 
+        if (await _userRepository.TrustedDeviceIdExistsAsync(request.DeviceId.Trim(), cancellationToken))
+            throw new DomainException("This mobile device is already bound to an account.");
+
         // Hash password
         var passwordHash = _passwordHasher.Hash(request.Password);
 
         // Create user
-        var user = new User(request.PhoneNumber, passwordHash);
+        var role = _systemAdministratorBootstrapPolicy?.IsBootstrapSystemAdministratorPhone(request.PhoneNumber) == true
+            ? UserRole.SystemAdmin
+            : UserRole.Owner;
+        var user = new User(request.PhoneNumber, passwordHash, role);
 
         // Set email if provided
         if (!string.IsNullOrWhiteSpace(request.Email))

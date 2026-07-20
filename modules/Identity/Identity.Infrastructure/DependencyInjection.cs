@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddSingleton<IOtpService>(serviceProvider => serviceProvider.GetRequiredService<RedisOtpService>());
         services.AddSingleton<IEmailOtpService>(serviceProvider => serviceProvider.GetRequiredService<RedisOtpService>());
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<ISystemAdministratorBootstrapPolicy, ConfigurationSystemAdministratorBootstrapPolicy>();
 
         return services;
     }

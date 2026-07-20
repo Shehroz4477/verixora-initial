@@ -191,6 +191,7 @@ public sealed class SmartLockSecurityHandlerTests
         public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(users.SingleOrDefault(user => user.Id == id));
         public Task<User?> GetByPhoneNumberAsync(string phoneNumber, CancellationToken cancellationToken = default) => Task.FromResult(users.SingleOrDefault(user => user.PhoneNumber == phoneNumber));
         public Task<bool> PhoneNumberExistsAsync(string phoneNumber, CancellationToken cancellationToken = default) => Task.FromResult(users.Any(user => user.PhoneNumber == phoneNumber));
+        public Task<bool> TrustedDeviceIdExistsAsync(string deviceId, CancellationToken cancellationToken = default) => Task.FromResult(users.Any(user => user.TrustedDevice?.DeviceId == deviceId));
         public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) => Task.FromResult(users.SingleOrDefault(user => user.Email == email));
         public Task AddAsync(User user, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UpdateAsync(User user, CancellationToken cancellationToken = default) => Task.CompletedTask;

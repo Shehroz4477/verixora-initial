@@ -15,18 +15,29 @@ public sealed class AdoNetUserRepository(DbConnectionFactory connectionFactory) 
         => (await GetUserAsync("identity.sp_GetUserByPhoneNumber", "identity.fn_get_user_by_phone_number", "PhoneNumber", phoneNumber, cancellationToken))?.ToDomain();
 
     public async Task<bool> PhoneNumberExistsAsync(string phoneNumber, CancellationToken cancellationToken = default)
+        => await ExistsAsync("identity.sp_PhoneNumberExists", "identity.fn_phone_number_exists", "PhoneNumber", phoneNumber, cancellationToken);
+
+    public async Task<bool> TrustedDeviceIdExistsAsync(string deviceId, CancellationToken cancellationToken = default)
+        => await ExistsAsync("identity.sp_TrustedDeviceIdExists", "identity.fn_trusted_device_id_exists", "DeviceId", deviceId, cancellationToken);
+
+    private async Task<bool> ExistsAsync(
+        string sqlServerRoutine,
+        string postgreSqlRoutine,
+        string parameterName,
+        string parameterValue,
+        CancellationToken cancellationToken)
     {
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = connectionFactory.Provider switch
         {
-            "SqlServer" => "identity.sp_PhoneNumberExists",
-            "PostgreSql" => "select identity.fn_phone_number_exists(@PhoneNumber)",
+            "SqlServer" => sqlServerRoutine,
+            "PostgreSql" => $"select {postgreSqlRoutine}(@{parameterName})",
             _ => throw UnsupportedProvider()
         };
         command.CommandType = connectionFactory.Provider == "SqlServer" ? CommandType.StoredProcedure : CommandType.Text;
-        AddParameter(command, "PhoneNumber", phoneNumber);
+        AddParameter(command, parameterName, parameterValue);
         var value = await command.ExecuteScalarAsync(cancellationToken);
         return value is not null && value is not DBNull && Convert.ToBoolean(value);
     }

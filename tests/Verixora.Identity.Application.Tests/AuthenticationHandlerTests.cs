@@ -60,6 +60,46 @@ public sealed class AuthenticationHandlerTests
     }
 
     [Fact]
+    public async Task Registration_assigns_system_admin_only_to_the_deployment_bootstrap_phone()
+    {
+        var repository = new InMemoryUserRepository();
+        var phoneNumber = "+923001234567";
+        var handler = new RegisterUserCommandHandler(
+            repository,
+            new TestPasswordHasher(),
+            new TestOtpService { RegistrationOtpIsValid = true },
+            new FixedSystemAdministratorBootstrapPolicy(phoneNumber));
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
+        var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(publicKey);
+
+        await handler.Handle(
+            new RegisterUserCommand(phoneNumber, "Password!1", "Password!1", "123456", "device-1", thumbprint, publicKey),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(UserRole.SystemAdmin, Assert.Single(repository.Users).Role);
+    }
+
+    [Fact]
+    public async Task Registration_rejects_a_device_already_bound_to_another_account()
+    {
+        var repository = new InMemoryUserRepository();
+        var existingUser = new User("+923001234567", "hash:Password!1");
+        existingUser.RegisterTrustedDevice("already-bound-device", "old-fingerprint");
+        await repository.AddAsync(existingUser, TestContext.Current.CancellationToken);
+        var handler = new RegisterUserCommandHandler(repository, new TestPasswordHasher(), new TestOtpService { RegistrationOtpIsValid = true });
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
+        var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(publicKey);
+
+        var exception = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new RegisterUserCommand("+923001234568", "Password!1", "Password!1", "123456", "already-bound-device", thumbprint, publicKey),
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal("This mobile device is already bound to an account.", exception.Message);
+    }
+
+    [Fact]
     public async Task Login_recovers_the_key_after_reinstall_only_on_the_same_registered_device()
     {
         var repository = new InMemoryUserRepository();
@@ -89,6 +129,9 @@ public sealed class AuthenticationHandlerTests
 
         public Task<bool> PhoneNumberExistsAsync(string phoneNumber, CancellationToken cancellationToken = default)
             => Task.FromResult(Users.Any(user => user.PhoneNumber == phoneNumber));
+
+        public Task<bool> TrustedDeviceIdExistsAsync(string deviceId, CancellationToken cancellationToken = default)
+            => Task.FromResult(Users.Any(user => user.TrustedDevice?.DeviceId == deviceId));
 
         public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
             => Task.FromResult(Users.SingleOrDefault(user => user.Email == email.ToLowerInvariant()));
@@ -121,5 +164,11 @@ public sealed class AuthenticationHandlerTests
     private sealed class TestJwtGenerator : IJwtTokenGenerator
     {
         public string GenerateToken(Guid userId, string phoneNumber, string role) => "test-jwt";
+    }
+
+    private sealed class FixedSystemAdministratorBootstrapPolicy(string bootstrapPhone) : ISystemAdministratorBootstrapPolicy
+    {
+        public bool IsBootstrapSystemAdministratorPhone(string phoneNumber)
+            => string.Equals(bootstrapPhone, phoneNumber, StringComparison.Ordinal);
     }
 }

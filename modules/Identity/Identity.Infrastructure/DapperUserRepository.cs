@@ -15,14 +15,27 @@ public sealed class DapperUserRepository(DbConnectionFactory connectionFactory) 
         => (await QuerySingleAsync("identity.sp_GetUserByPhoneNumber", "identity.fn_get_user_by_phone_number", "PhoneNumber", new { PhoneNumber = phoneNumber }, cancellationToken))?.ToDomain();
 
     public async Task<bool> PhoneNumberExistsAsync(string phoneNumber, CancellationToken cancellationToken = default)
+        => await ExistsAsync("identity.sp_PhoneNumberExists", "identity.fn_phone_number_exists", "PhoneNumber", phoneNumber, cancellationToken);
+
+    public async Task<bool> TrustedDeviceIdExistsAsync(string deviceId, CancellationToken cancellationToken = default)
+        => await ExistsAsync("identity.sp_TrustedDeviceIdExists", "identity.fn_trusted_device_id_exists", "DeviceId", deviceId, cancellationToken);
+
+    private async Task<bool> ExistsAsync(
+        string sqlServerRoutine,
+        string postgreSqlRoutine,
+        string parameterName,
+        string parameterValue,
+        CancellationToken cancellationToken)
     {
         await using var connection = connectionFactory.CreateConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add(parameterName, parameterValue);
         return connectionFactory.Provider switch
         {
             "SqlServer" => await connection.QuerySingleAsync<bool>(new CommandDefinition(
-                "identity.sp_PhoneNumberExists", new { PhoneNumber = phoneNumber }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
+                sqlServerRoutine, parameters, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
             "PostgreSql" => await connection.QuerySingleAsync<bool>(new CommandDefinition(
-                "select identity.fn_phone_number_exists(@PhoneNumber)", new { PhoneNumber = phoneNumber }, cancellationToken: cancellationToken)),
+                $"select {postgreSqlRoutine}(@{parameterName})", parameters, cancellationToken: cancellationToken)),
             _ => throw UnsupportedProvider()
         };
     }

@@ -13,6 +13,8 @@
     { "key": "deviceFingerprint", "value": "replace-with-Base64Url-SHA256-of-device-public-key-SPKI" },
     { "key": "devicePublicKeySpkiBase64", "value": "replace-with-Android-Keystore-P256-public-key-SPKI-Base64" },
     { "key": "registrationOtp", "value": "" },
+    { "key": "duplicatePhoneNumber", "value": "+923001234568" },
+    { "key": "duplicateRegistrationOtp", "value": "" },
     { "key": "loginOtp", "value": "" },
     { "key": "email", "value": "owner@example.test" },
     { "key": "emailVerificationOtp", "value": "" },
@@ -201,6 +203,16 @@
           "name": "Reject anonymous lock registration",
           "request": { "method": "POST", "url": "{{baseUrl}}/locks", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Protected locks API rejects anonymous callers', () => pm.expect(pm.response.code).to.equal(401));"] } }]
+        },
+        {
+          "name": "Send second registration OTP for duplicate-device regression",
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/send-otp", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"phoneNumber\": \"{{duplicatePhoneNumber}}\" }" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Second registration OTP request succeeds', () => pm.expect(pm.response.code).to.equal(200));"] } }]
+        },
+        {
+          "name": "Reject registration from an already-bound mobile device",
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/register", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"{{duplicatePhoneNumber}}\",\n  \"password\": \"{{password}}\",\n  \"confirmPassword\": \"{{password}}\",\n  \"otp\": \"{{duplicateRegistrationOtp}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceFingerprint\": \"{{deviceFingerprint}}\",\n  \"devicePublicKeySpkiBase64\": \"{{devicePublicKeySpkiBase64}}\"\n}" } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('A device can be bound to only one account', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Duplicate device is explicitly rejected', () => pm.expect(pm.response.json().error).to.include('already bound'));" ] } }]
         }
       ]
     }

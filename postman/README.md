@@ -1,6 +1,6 @@
 # Verixora Postman suite
 
-Import the collection and **Verixora Local** environment, then run folders in numeric order. Set a unique `phoneNumber`, a strong test `password`, `deviceId`, and `deviceFingerprint` before registration.
+Import the collection and **Verixora Local** environment, then run folders in numeric order. Set a unique `phoneNumber`, `duplicatePhoneNumber`, a strong test `password`, `deviceId`, and `deviceFingerprint` before registration. The two phone numbers must be SMS-capable numbers you control; the duplicate-device regression intentionally uses the same `deviceId` for the second account attempt.
 
 OTP codes are deliberately never returned by API responses. For local development only, copy each code from the API console into its matching collection variable; use real SMS/email delivery in every non-development environment. The suite includes success, device-binding, invalid-OTP, authorization, email/web-login, pending-controller, lock-registration, and audit-trail regression cases for the endpoints implemented so far. A pending controller is deliberately rejected for door registration; it has no path to an unlock command until secure provisioning is completed.
 
