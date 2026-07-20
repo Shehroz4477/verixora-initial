@@ -44,6 +44,11 @@
           "name": "Liveness check",
           "request": { "method": "GET", "url": "{{serviceUrl}}/health/live" },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Liveness endpoint is healthy', () => pm.expect(pm.response.code).to.equal(200));"] } }]
+        },
+        {
+          "name": "Readiness check",
+          "request": { "method": "GET", "url": "{{serviceUrl}}/health/ready" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Readiness endpoint has database and Redis dependencies available', () => pm.expect(pm.response.code).to.equal(200));"] } }]
         }
       ]
     },

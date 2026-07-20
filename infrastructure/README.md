@@ -33,7 +33,7 @@ Build the API image from the repository root. The image runs as an unprivileged 
 docker build --pull -f api-host/ApiHost/Dockerfile -t verixora-api:local .
 ```
 
-The API is intentionally not included in the local infrastructure compose file: it must receive its database/Redis/JWT/OTP/biometric secrets and production data-protection certificate through the deployment platform's secret store.
+The API is intentionally not included in the local infrastructure compose file: it must receive its database/Redis/JWT/OTP/biometric secrets and production data-protection certificate through the deployment platform's secret store. Deployment platforms should use `GET /health/live` only to determine whether the process is alive, and `GET /health/ready` to determine whether both the configured database and Redis are reachable. Neither endpoint returns exception details.
 
 ## Production data-protection keys
 
