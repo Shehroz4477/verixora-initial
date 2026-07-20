@@ -103,6 +103,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -118,6 +119,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<MonitoringHub>("/hubs/system-monitoring");
+app.MapHealthChecks("/health/live");
 
 app.Run();
 

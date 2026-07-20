@@ -7,6 +7,7 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5166/api/v1" },
+    { "key": "serviceUrl", "value": "http://localhost:5166" },
     { "key": "phoneNumber", "value": "+923001234567" },
     { "key": "password", "value": "ChangeMe123!" },
     { "key": "deviceId", "value": "replace-with-a-unique-android-device-id" },
@@ -36,6 +37,16 @@
     { "key": "faceEnrollmentImage3", "value": "replace-with-an-absolute-path-to-face-3.jpg" }
   ],
   "item": [
+    {
+      "name": "00 Service health",
+      "item": [
+        {
+          "name": "Liveness check",
+          "request": { "method": "GET", "url": "{{serviceUrl}}/health/live" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Liveness endpoint is healthy', () => pm.expect(pm.response.code).to.equal(200));"] } }]
+        }
+      ]
+    },
     {
       "name": "01 Mobile authentication",
       "item": [

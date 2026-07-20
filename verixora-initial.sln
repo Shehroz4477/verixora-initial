@@ -25,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{D4
 		database\postgresql\010_face_biometric_templates.sql = database\postgresql\010_face_biometric_templates.sql
 		database\postgresql\011_trusted_device_keys.sql = database\postgresql\011_trusted_device_keys.sql
 		database\postgresql\012_system_admin_monitoring.sql = database\postgresql\012_system_admin_monitoring.sql
+		database\postgresql\013_registration_admission_controls.sql = database\postgresql\013_registration_admission_controls.sql
+		database\postgresql\014_fix_lock_command_outbox_function.sql = database\postgresql\014_fix_lock_command_outbox_function.sql
 		database\sqlserver\001_homes.sql = database\sqlserver\001_homes.sql
 		database\sqlserver\002_identity.sql = database\sqlserver\002_identity.sql
 		database\sqlserver\003_devices.sql = database\sqlserver\003_devices.sql
@@ -37,6 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "database", "database", "{D4
 		database\sqlserver\010_face_biometric_templates.sql = database\sqlserver\010_face_biometric_templates.sql
 		database\sqlserver\011_trusted_device_keys.sql = database\sqlserver\011_trusted_device_keys.sql
 		database\sqlserver\012_system_admin_monitoring.sql = database\sqlserver\012_system_admin_monitoring.sql
+		database\sqlserver\013_registration_admission_controls.sql = database\sqlserver\013_registration_admission_controls.sql
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "postman", "postman", "{32B92054-09D1-4A6D-8B5A-3340D164A086}"

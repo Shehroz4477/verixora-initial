@@ -25,6 +25,16 @@ It is intended for development only. All host ports bind to `127.0.0.1`, so they
 
 Do not expose this compose stack publicly. Production services will use managed networking, secrets management, TLS, authentication, database roles, and per-device MQTT certificates.
 
+## API container image
+
+Build the API image from the repository root. The image runs as an unprivileged user on port `8080` and exposes `GET /health/live` for the deployment platform's liveness probe.
+
+```powershell
+docker build --pull -f api-host/ApiHost/Dockerfile -t verixora-api:local .
+```
+
+The API is intentionally not included in the local infrastructure compose file: it must receive its database/Redis/JWT/OTP/biometric secrets and production data-protection certificate through the deployment platform's secret store.
+
 ## Production data-protection keys
 
 The API deliberately refuses to start outside `Development` unless its ASP.NET Core data-protection keys are persisted and encrypted with a private-key certificate. Inject these values through the deployment secret store, never through source-controlled JSON:
