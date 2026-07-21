@@ -14,5 +14,6 @@
     <ProjectReference Include="..\..\building-blocks\BuildingBlocks.Domain\BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\..\modules\Devices\Devices.Application\Devices.Application.csproj" />
     <ProjectReference Include="..\..\modules\Devices\Devices.Domain\Devices.Domain.csproj" />
+    <ProjectReference Include="..\..\modules\Homes\Homes.Application\Homes.Application.csproj" />
   </ItemGroup>
 </Project>

@@ -146,6 +146,11 @@
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller registration succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const body = pm.response.json();", "pm.test('Controller remains pending secure provisioning', () => pm.expect(body.status).to.equal('Pending'));", "pm.test('Controller topic is assigned', () => pm.expect(body.mqttTopic).to.match(/^verixora\\//));", "pm.test('Provisioning secret is returned only to the authenticated owner', () => pm.expect(body.provisioningToken).to.be.a('string').and.not.empty);", "pm.collectionVariables.set('deviceId', body.deviceId);", "pm.collectionVariables.set('controllerProvisioningToken', body.provisioningToken);"] } }]
         },
         {
+          "name": "List authorised home controllers without provisioning secrets",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/devices?homeId={{homeId}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Controller list succeeds', () => pm.expect(pm.response.code).to.equal(200));", "const controllers = pm.response.json();", "pm.test('Controller list is an array', () => pm.expect(controllers).to.be.an('array'));", "pm.test('Provisioning secrets and controller keys are never listed', () => pm.expect(pm.response.text()).to.not.match(/provisioningToken|controllerPublicKey|attestationSubject/i));"] } }]
+        },
+        {
           "name": "Reject lock registration while controller is pending",
           "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/locks", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"homeId\": \"{{homeId}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"name\": \"Front Door\",\n  \"requiresFace\": true\n}" } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Pending controller cannot be assigned to a door', () => pm.expect(pm.response.code).to.equal(400));", "pm.test('Controller credentials are not exposed', () => pm.expect(pm.response.text()).to.not.include('certificate'));" ] } }]

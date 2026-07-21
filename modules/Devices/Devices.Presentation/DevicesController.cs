@@ -36,6 +36,24 @@ public class DevicesController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetForHome([FromQuery] Guid homeId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _mediator.Send(
+                new GetControllersForHomeQuery(homeId, GetCurrentUserId(), string.Equals(GetCurrentUserRole(), "SystemAdmin", StringComparison.Ordinal)),
+                cancellationToken);
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
     [AllowAnonymous]
     [HttpPost("provisioning/complete")]
     public async Task<IActionResult> CompleteProvisioning([FromBody] CompleteControllerProvisioningRequest request)
@@ -52,6 +70,9 @@ public class DevicesController : ControllerBase
 
         return userId;
     }
+
+    private string GetCurrentUserRole()
+        => User.FindFirstValue(ClaimTypes.Role) ?? "Guest";
 }
 
 public sealed record RegisterDeviceRequest(Guid HomeId, string Name, string HardwareId);
