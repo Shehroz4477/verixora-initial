@@ -7,3 +7,17 @@ OTP codes are deliberately never returned by API responses. For local developmen
 The provisioning request is deliberately development-only when using the `local-development-only` attestation marker. Production must configure a manufacturer/secure-element attestation verifier and MQTT mutual-TLS certificates; do not enable the development switch outside a local machine.
 
 The local API profile listens on `http://localhost:5166`; copy [the local API example configuration](../api-host/ApiHost/appsettings.Local.example.json) to `appsettings.Local.json`, set the local secrets, then run the API.
+
+For a repeatable live smoke test without exposing development OTPs, start the Docker infrastructure and run:
+
+```powershell
+.\scripts\Invoke-LocalE2E.ps1
+```
+
+It starts a temporary development API process, creates unique local-only test records, and verifies registration, trusted-device login, controller provisioning, pending-door rejection, the offline unlock fail-closed rule, and the audit trail. It prints only the final pass summary. The script uses the `local-development-only` controller attestation marker solely for the local test; it must never be accepted in production.
+
+Newman is available without a global install. With the local API already running, this command executes the health folder and its assertions:
+
+```powershell
+npx --yes newman run '.\postman\Verixora API.postman_collection.json' --folder '00 Service health' --reporters cli
+```
