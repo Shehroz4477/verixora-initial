@@ -21,21 +21,24 @@ function Assert-ContainerRunning {
 function Invoke-SqlServerScript {
     param([Parameter(Mandatory)][string]$Sql, [Parameter(Mandatory)][string]$Database)
 
-    # Windows PowerShell adds a UTF-8 BOM to native stdin. Run the container shell
-    # through an argument array, which preserves the shell command as one argument,
-    # then strip that BOM inside the container. Splitting on SQLCMD batch separators
-    # keeps CREATE/ALTER PROCEDURE statements valid.
+    # Run SQLCMD directly with each batch as an argument. This avoids both the UTF-8
+    # BOM Windows PowerShell adds to native stdin and PowerShell's shell-command
+    # parsing differences. SQLCMDPASSWORD is configured inside the local container.
+    # Splitting on SQLCMD batch separators keeps CREATE/ALTER PROCEDURE statements valid.
     $batches = $Sql -split '(?im)^[ \t]*go[ \t]*(?:--.*)?\r?$'
     foreach ($batch in $batches) {
         if ([string]::IsNullOrWhiteSpace($batch)) { continue }
 
         $arguments = @(
-            'exec', '-i',
+            'exec',
             'verixora-sqlserver',
-            '/bin/sh', '-c',
-            'tail -c +4 | /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$1" -i /dev/stdin',
-            '_', $Database)
-        $batch | & docker @arguments | Out-Null
+            '/opt/mssql-tools18/bin/sqlcmd',
+            '-C', '-b',
+            '-S', 'localhost',
+            '-U', 'sa',
+            '-d', $Database,
+            '-Q', $batch)
+        & docker @arguments | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "SQL Server schema execution failed for database '$Database'." }
     }
 }

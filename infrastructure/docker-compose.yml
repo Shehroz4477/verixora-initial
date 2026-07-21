@@ -7,6 +7,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in infrastructure/.env}
+      SQLCMDPASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in infrastructure/.env}
     ports:
       - "127.0.0.1:14333:1433"
     volumes:
