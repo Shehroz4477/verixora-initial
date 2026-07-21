@@ -46,6 +46,18 @@ public sealed class DapperFaceTemplateRepository(DbConnectionFactory connectionF
         }
     }
 
+    public async Task DeleteForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        _ = connectionFactory.Provider switch
+        {
+            "SqlServer" => await connection.ExecuteAsync(new CommandDefinition("identity.sp_DeleteFaceEmbeddingsForUser", new { UserId = userId }, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken)),
+            "PostgreSql" => await connection.ExecuteAsync(new CommandDefinition("select identity.fn_delete_face_embeddings_for_user(@UserId)", new { UserId = userId }, cancellationToken: cancellationToken)),
+            _ => throw UnsupportedProvider()
+        };
+    }
+
     private Task ExecuteDeleteAsync(System.Data.Common.DbConnection connection, System.Data.Common.DbTransaction transaction, Guid userId, CancellationToken cancellationToken)
         => connectionFactory.Provider switch
         {

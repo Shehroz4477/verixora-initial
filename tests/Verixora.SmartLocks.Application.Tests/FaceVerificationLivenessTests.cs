@@ -41,6 +41,21 @@ public sealed class FaceVerificationLivenessTests
         Assert.True(isVerified);
     }
 
+    [Fact]
+    public async Task Delete_enrollment_removes_only_the_authenticated_users_templates()
+    {
+        var userId = Guid.NewGuid();
+        var configuration = BuildConfiguration(allowPassiveDevelopmentVerification: false);
+        var protector = new AesGcmFaceTemplateProtector(configuration);
+        var repository = ThreeTemplates(protector.Protect(userId, JsonSerializer.SerializeToUtf8Bytes(new float[128])));
+        using var client = new HttpClient(new MatchingFaceHandler()) { BaseAddress = new Uri("http://face-service.test") };
+        var provider = new PythonFaceVerificationProvider(client, repository, protector, new TestHostEnvironment("Production"), configuration);
+
+        await provider.DeleteEnrollmentAsync(userId, TestContext.Current.CancellationToken);
+
+        Assert.Equal(userId, repository.DeletedUserId);
+    }
+
     private static IConfiguration BuildConfiguration(bool allowPassiveDevelopmentVerification)
         => new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -55,11 +70,19 @@ public sealed class FaceVerificationLivenessTests
 
     private sealed class FixedTemplateRepository(params EncryptedFaceTemplate[] templates) : IFaceTemplateRepository
     {
+        public Guid? DeletedUserId { get; private set; }
+
         public Task<IReadOnlyList<EncryptedFaceTemplate>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<EncryptedFaceTemplate>>(templates);
 
         public Task ReplaceForUserAsync(Guid userId, IReadOnlyList<EncryptedFaceTemplate> templates, CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
+
+        public Task DeleteForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            DeletedUserId = userId;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class MatchingFaceHandler : HttpMessageHandler

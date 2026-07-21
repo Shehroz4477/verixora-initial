@@ -66,7 +66,14 @@ public sealed class AdoNetFaceTemplateRepository(DbConnectionFactory connectionF
         }
     }
 
-    private async Task DeleteAsync(DbConnection connection, DbTransaction transaction, Guid userId, CancellationToken cancellationToken)
+    public async Task DeleteForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+        await DeleteAsync(connection, null, userId, cancellationToken);
+    }
+
+    private async Task DeleteAsync(DbConnection connection, DbTransaction? transaction, Guid userId, CancellationToken cancellationToken)
     {
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;

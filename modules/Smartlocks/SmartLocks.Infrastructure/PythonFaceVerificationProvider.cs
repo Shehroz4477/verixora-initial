@@ -89,6 +89,9 @@ public class PythonFaceVerificationProvider : IFaceVerificationProvider
         await _templateRepository.ReplaceForUserAsync(userId, templates, cancellationToken);
     }
 
+    public Task DeleteEnrollmentAsync(Guid userId, CancellationToken cancellationToken = default)
+        => _templateRepository.DeleteForUserAsync(userId, cancellationToken);
+
     private static void ValidateEmbeddings(IReadOnlyList<float[]> embeddings)
     {
         if (embeddings.Count == 0 || embeddings.Any(embedding => embedding.Length != EmbeddingDimensions || embedding.Any(value => !float.IsFinite(value))))

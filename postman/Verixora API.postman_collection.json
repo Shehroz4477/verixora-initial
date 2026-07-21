@@ -179,6 +179,11 @@
           "name": "Enroll encrypted face templates",
           "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "POST", "url": "{{baseUrl}}/face/enroll", "body": { "mode": "formdata", "formdata": [{ "key": "images", "type": "file", "src": "{{faceEnrollmentImage1}}" }, { "key": "images", "type": "file", "src": "{{faceEnrollmentImage2}}" }, { "key": "images", "type": "file", "src": "{{faceEnrollmentImage3}}" }] } },
           "event": [{ "listen": "test", "script": { "exec": ["pm.test('Face templates are enrolled', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Enrollment does not expose raw templates', () => pm.expect(pm.response.text()).to.not.include('embedding'));", "pm.test('Three frames are acknowledged', () => pm.expect(pm.response.json().acceptedFrames).to.equal(3));"] } }]
+        },
+        {
+          "name": "Delete enrolled face templates",
+          "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] }, "method": "DELETE", "url": "{{baseUrl}}/face/enrollment" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Face templates are permanently deleted for the authenticated user', () => pm.expect(pm.response.code).to.equal(200));", "pm.test('Deletion confirms the expected state', () => pm.expect(pm.response.json().status).to.equal('deleted'));"] } }]
         }
       ]
     },

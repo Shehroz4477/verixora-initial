@@ -15,6 +15,7 @@ public interface IFaceTemplateRepository
 {
     Task<IReadOnlyList<EncryptedFaceTemplate>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task ReplaceForUserAsync(Guid userId, IReadOnlyList<EncryptedFaceTemplate> templates, CancellationToken cancellationToken = default);
+    Task DeleteForUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 
 public interface IFaceTemplateProtector

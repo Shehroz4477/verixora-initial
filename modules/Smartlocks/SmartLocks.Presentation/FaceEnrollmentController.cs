@@ -60,6 +60,20 @@ public sealed class FaceEnrollmentController(IFaceVerificationProvider faceVerif
         }
     }
 
+    [HttpDelete("enrollment")]
+    public async Task<IActionResult> DeleteEnrollment(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await faceVerificationProvider.DeleteEnrollmentAsync(GetUserId(), cancellationToken);
+            return Ok(new { status = "deleted" });
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
     private Guid GetUserId()
     {
         var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);

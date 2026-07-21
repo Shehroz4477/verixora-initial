@@ -16,4 +16,10 @@ public class MockFaceVerificationProvider : IFaceVerificationProvider
         Console.WriteLine($"FACE ENROLL: User={userId} – Mock enrollment successful");
         return Task.CompletedTask;
     }
+
+    public Task DeleteEnrollmentAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"FACE DELETE: User={userId} - Mock enrollment removed");
+        return Task.CompletedTask;
+    }
 }

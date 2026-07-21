@@ -207,6 +207,7 @@ public sealed class SmartLockSecurityHandlerTests
     {
         public Task<bool> VerifyAsync(Guid userId, Stream imageStream, CancellationToken cancellationToken = default) => Task.FromResult(true);
         public Task EnrollAsync(Guid userId, List<Stream> imageStreams, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task DeleteEnrollmentAsync(Guid userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class CapturingMqttPublisher : IMqttPublisher
