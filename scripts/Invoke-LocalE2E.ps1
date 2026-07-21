@@ -1,6 +1,10 @@
 [CmdletBinding()]
 param(
     [string]$ApiBaseUrl = 'http://localhost:5166',
+    [ValidateSet('PostgreSql', 'SqlServer')]
+    [string]$DatabaseProvider = 'PostgreSql',
+    [ValidateSet('DapperStoredProcedure', 'AdoNetStoredProcedure', 'EfCore')]
+    [string]$DataAccessMode = 'DapperStoredProcedure',
     [int]$StartupTimeoutSeconds = 45
 )
 
@@ -12,6 +16,24 @@ $ErrorActionPreference = 'Stop'
 # boundary that keeps a door locked while a controller is offline.
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $apiJob = $null
+
+function Get-LocalDockerValue {
+    param([Parameter(Mandatory)][string]$ContainerName, [Parameter(Mandatory)][string]$Name)
+
+    $command = switch ($Name) {
+        'MSSQL_SA_PASSWORD' { 'printf %s "$MSSQL_SA_PASSWORD"' }
+        'REDIS_PASSWORD' { 'printf %s "$REDIS_PASSWORD"' }
+        'POSTGRES_DB' { 'printf %s "$POSTGRES_DB"' }
+        'POSTGRES_USER' { 'printf %s "$POSTGRES_USER"' }
+        'POSTGRES_PASSWORD' { 'printf %s "$POSTGRES_PASSWORD"' }
+        default { throw "Unsupported local Docker value '$Name'." }
+    }
+    $value = ((& docker exec $ContainerName /bin/sh -c $command 2>$null) | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($value)) {
+        throw "The local Docker value '$Name' is unavailable. Start infrastructure/docker-compose.yml first."
+    }
+    return $value
+}
 
 function Assert-That {
     param([bool]$Condition, [string]$Message)
@@ -97,9 +119,14 @@ function New-Base64UrlFingerprint {
 }
 
 function New-P256KeyMaterial {
-    $bash = Join-Path $env:ProgramFiles 'Git\bin\bash.exe'
+    $bash = if ($env:OS -eq 'Windows_NT') {
+        Join-Path $env:ProgramFiles 'Git\bin\bash.exe'
+    }
+    else {
+        (Get-Command bash -ErrorAction Stop).Source
+    }
     if (-not (Test-Path -LiteralPath $bash)) {
-        throw 'Git Bash with OpenSSL is required for this local E2E test.'
+        throw 'Bash with OpenSSL is required for this local E2E test.'
     }
 
     $spkiBase64 = ((& $bash -lc "openssl ecparam -name prime256v1 -genkey -noout | openssl ec -pubout -outform DER 2>/dev/null | openssl base64 -A") | Out-String).Trim()
@@ -116,6 +143,8 @@ function New-P256KeyMaterial {
 }
 
 function Wait-ForApi {
+    param($Job, [string[]]$SensitiveValues = @())
+
     for ($attempt = 0; $attempt -lt ($StartupTimeoutSeconds * 2); $attempt++) {
         try {
             $health = Invoke-WebRequest -UseBasicParsing -Uri "$ApiBaseUrl/health/ready" -TimeoutSec 2
@@ -124,26 +153,68 @@ function Wait-ForApi {
         catch { }
         Start-Sleep -Milliseconds 500
     }
-    throw "The API did not become ready at $ApiBaseUrl. Confirm appsettings.Local.json and Docker infrastructure are configured."
+
+    $diagnostics = (Receive-Job -Job $Job -Keep 2>&1 | Out-String)
+    foreach ($sensitiveValue in $SensitiveValues | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) {
+        $diagnostics = $diagnostics.Replace($sensitiveValue, '<redacted>')
+    }
+    $diagnostics = (($diagnostics -split [Environment]::NewLine | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Last 12) -join [Environment]::NewLine)
+    throw "The API did not become ready at $ApiBaseUrl. Diagnostics: $diagnostics"
 }
 
 try {
+    # Apply idempotent schema scripts before creating test data. This makes the test
+    # usable on a fresh local Docker volume and validates the selected SQL dialect.
+    & (Join-Path $projectRoot 'scripts\Initialize-LocalDatabases.ps1') -Provider $DatabaseProvider | Out-Null
+
     $faceKeyBytes = New-Object byte[] 32
     $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
     try { $rng.GetBytes($faceKeyBytes) }
     finally { $rng.Dispose() }
 
     $faceKey = [Convert]::ToBase64String($faceKeyBytes)
+    $securityKeyBytes = New-Object byte[] 32
+    $securityRng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $securityRng.GetBytes($securityKeyBytes) }
+    finally { $securityRng.Dispose() }
+    $otpHashKey = [Convert]::ToBase64String($securityKeyBytes)
+    $jwtKey = [Convert]::ToBase64String($securityKeyBytes)
+
+    $databaseConnection = $null
+    $redisConfiguration = $null
+    $sqlServerPassword = $null
+    $postgreSqlPassword = $null
+    $redisPassword = $null
+    if ($DatabaseProvider -eq 'SqlServer') {
+        $sqlServerPassword = Get-LocalDockerValue -ContainerName 'verixora-sqlserver' -Name 'MSSQL_SA_PASSWORD'
+        $databaseConnection = "Server=127.0.0.1,14333;Database=verixora;User Id=sa;Password=$sqlServerPassword;Encrypt=True;TrustServerCertificate=True"
+    }
+    else {
+        $postgreSqlPassword = Get-LocalDockerValue -ContainerName 'verixora-postgres' -Name 'POSTGRES_PASSWORD'
+        $postgreSqlUser = Get-LocalDockerValue -ContainerName 'verixora-postgres' -Name 'POSTGRES_USER'
+        $postgreSqlDatabase = Get-LocalDockerValue -ContainerName 'verixora-postgres' -Name 'POSTGRES_DB'
+        $databaseConnection = "Host=127.0.0.1;Port=5433;Database=$postgreSqlDatabase;Username=$postgreSqlUser;Password=$postgreSqlPassword"
+    }
+    $redisPassword = Get-LocalDockerValue -ContainerName 'verixora-redis' -Name 'REDIS_PASSWORD'
+    $redisConfiguration = "127.0.0.1:6379,password=$redisPassword,abortConnect=false"
+    $apiArguments = @($projectRoot, $ApiBaseUrl, $faceKey, $DatabaseProvider, $databaseConnection, $redisConfiguration, $DataAccessMode, $otpHashKey, $jwtKey)
     $apiJob = Start-Job -ScriptBlock {
-        param($Root, $Url, $EphemeralFaceKey)
+        param($Root, $Url, $EphemeralFaceKey, $Provider, $ConnectionString, $RedisConfiguration, $Mode, $OtpHashKey, $JwtKey)
         $env:ASPNETCORE_ENVIRONMENT = 'Development'
         $env:ASPNETCORE_URLS = $Url
         $env:FaceBiometrics__EncryptionKeyBase64 = $EphemeralFaceKey
         $env:ControllerProvisioning__AllowInsecureDevelopmentAttestation = 'true'
+        $env:DataAccess__Mode = $Mode
+        $env:DatabaseProvider = $Provider
+        $env:ConnectionStrings__DefaultConnection = $ConnectionString
+        $env:Redis__Configuration = $RedisConfiguration
+        $env:Otp__HashKey = $OtpHashKey
+        $env:Jwt__Key = $JwtKey
+        $env:Jwt__Issuer = 'Verixora'
         Set-Location $Root
         dotnet run --project 'api-host\ApiHost\ApiHost.csproj' --no-launch-profile
-    } -ArgumentList $projectRoot, $ApiBaseUrl, $faceKey
-    Wait-ForApi
+    } -ArgumentList $apiArguments
+    Wait-ForApi -Job $apiJob -SensitiveValues @($databaseConnection, $redisConfiguration, $sqlServerPassword, $postgreSqlPassword, $redisPassword, $otpHashKey, $jwtKey)
 
     $suffix = (Get-Random -Minimum 1000000 -Maximum 9999999).ToString()
     $phone = '+92300' + $suffix
@@ -214,6 +285,8 @@ try {
     $audit = Convert-ResponseJson $response
 
     [pscustomobject]@{
+        DatabaseProvider = $DatabaseProvider
+        DataAccessMode = $DataAccessMode
         Registration = $registration.message
         SameDeviceLogin = $true
         PendingDoorRejected = $true

@@ -16,6 +16,25 @@ For a repeatable live smoke test without exposing development OTPs, start the Do
 
 It starts a temporary development API process, creates unique local-only test records, and verifies registration, trusted-device login, controller provisioning, pending-door rejection, the offline unlock fail-closed rule, and the audit trail. It prints only the final pass summary. The script uses the `local-development-only` controller attestation marker solely for the local test; it must never be accepted in production.
 
+The default validates PostgreSQL. Validate the identical Dapper/stored-procedure flow against SQL Server with:
+
+```powershell
+.\scripts\Invoke-LocalE2E.ps1 -DatabaseProvider SqlServer
+```
+
+The default uses `DapperStoredProcedure`. The alternate data-access implementations are also selectable for local verification:
+
+```powershell
+.\scripts\Invoke-LocalE2E.ps1 -DataAccessMode AdoNetStoredProcedure
+.\scripts\Invoke-LocalE2E.ps1 -DataAccessMode EfCore
+```
+
+To verify all six combinations of PostgreSQL/SQL Server and Dapper/ADO.NET/EF Core in one run, use:
+
+```powershell
+.\scripts\Invoke-LocalDataAccessMatrix.ps1
+```
+
 Newman is available without a global install. With the local API already running, this command executes the health folder and its assertions:
 
 ```powershell

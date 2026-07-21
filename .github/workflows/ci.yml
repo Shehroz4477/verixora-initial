@@ -21,6 +21,26 @@ jobs:
       - run: dotnet test verixora-initial.sln --no-build --no-restore --configuration Release
       - run: docker build -f api-host/ApiHost/Dockerfile -t verixora-api:ci .
 
+  data-access-integration:
+    runs-on: ubuntu-latest
+    env:
+      MSSQL_SA_PASSWORD: VerixoraCi!2026Sql
+      POSTGRES_PASSWORD: VerixoraCi!2026Postgres
+      REDIS_PASSWORD: VerixoraCi!2026Redis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore verixora-initial.sln
+      - run: docker compose -f infrastructure/docker-compose.yml up -d --wait sqlserver postgres redis mosquitto
+      - shell: pwsh
+        run: ./scripts/Invoke-LocalDataAccessMatrix.ps1
+      - if: failure()
+        run: docker compose -f infrastructure/docker-compose.yml logs --no-color
+      - if: always()
+        run: docker compose -f infrastructure/docker-compose.yml down -v
+
   firmware:
     runs-on: ubuntu-latest
     steps:

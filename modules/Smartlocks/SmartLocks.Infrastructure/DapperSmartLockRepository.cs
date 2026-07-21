@@ -35,7 +35,7 @@ public sealed class DapperSmartLockRepository(DbConnectionFactory connectionFact
     public async Task AddAsync(SmartLock smartLock, CancellationToken cancellationToken = default)
     {
         await using var connection = connectionFactory.CreateConnection();
-        var parameters = PersistedSmartLock.ToParameters(smartLock);
+        var parameters = PersistedSmartLock.ToCreateParameters(smartLock);
         switch (connectionFactory.Provider)
         {
             case "SqlServer":

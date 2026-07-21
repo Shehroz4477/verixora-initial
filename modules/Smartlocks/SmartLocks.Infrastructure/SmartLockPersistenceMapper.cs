@@ -21,15 +21,13 @@ internal sealed class PersistedSmartLock
         return SmartLock.Rehydrate(Id, Name, DeviceId, HomeId, status, RequiresFace, LastUnlockedAtUtc, LastUnlockedBy);
     }
 
-    public static object ToParameters(SmartLock smartLock) => new
+    public static object ToCreateParameters(SmartLock smartLock) => new
     {
         smartLock.Id,
         smartLock.DeviceId,
         smartLock.HomeId,
         smartLock.Name,
         Status = smartLock.Status.ToString(),
-        smartLock.RequiresFace,
-        LastUnlockedAtUtc = smartLock.LastUnlockedAt,
-        smartLock.LastUnlockedBy
+        smartLock.RequiresFace
     };
 }

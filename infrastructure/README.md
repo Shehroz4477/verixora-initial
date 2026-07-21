@@ -14,6 +14,14 @@ It is intended for development only. All host ports bind to `127.0.0.1`, so they
    docker compose ps
    ```
 
+4. Apply the versioned schemas to both local database containers. This command is idempotent and never prints local passwords:
+
+   ```powershell
+   ..\scripts\Initialize-LocalDatabases.ps1
+   ```
+
+   To apply one provider only, use `-Provider PostgreSql` or `-Provider SqlServer`. The application selects a provider with `DatabaseProvider` and uses `DapperStoredProcedure` by default. The local E2E test also runs the selected provider's schema initializer, reads only local Docker credentials into its temporary API process, and generates ephemeral test-only OTP/JWT keys, so it works with a fresh Docker volume without source-controlled secrets.
+
 ## Ports
 
 | Service | Host address |
