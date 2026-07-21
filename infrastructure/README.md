@@ -46,3 +46,20 @@ DataProtection__CertificatePassword=<secret>
 ```
 
 The key-ring directory must be persistent and writable by the API service account. The PFX must contain a private key and be mounted read-only with restrictive permissions. Development intentionally uses ephemeral keys so no local credential or stale Windows DPAPI key can affect the API.
+
+## Production OTP and email delivery
+
+Development writes OTPs only to the local API console. Outside `Development`, the API fails closed at startup unless a real Twilio SMS sender and SendGrid email sender are configured through the deployment secret store. Never use the local console senders in a shared or production environment.
+
+```text
+Messaging__Sms__Provider=Twilio
+Messaging__Sms__Twilio__AccountSid=<secret>
+Messaging__Sms__Twilio__AuthToken=<secret>
+Messaging__Sms__Twilio__FromNumber=+15551234567
+Messaging__Email__Provider=SendGrid
+Messaging__Email__SendGrid__ApiKey=<secret>
+Messaging__Email__SendGrid__FromEmail=security@example.com
+Messaging__Email__SendGrid__FromName=Verixora
+```
+
+The provider account must have an approved sender identity and appropriate regional compliance. Treat provider credentials as high-value secrets, rotate them regularly, and configure provider-side fraud/rate-limit controls in addition to Verixora's Redis OTP controls.

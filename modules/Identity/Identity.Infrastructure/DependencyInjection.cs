@@ -3,6 +3,7 @@ using Identity.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
@@ -12,7 +13,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddIdentityInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         var provider = configuration["DatabaseProvider"] ?? throw new InvalidOperationException("DatabaseProvider is required.");
         var connectionString = configuration.GetConnectionString("DefaultConnection");
@@ -55,8 +57,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConfiguration));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<ISmsService, LocalDevelopmentSmsService>();
-        services.AddSingleton<IEmailService, LocalDevelopmentEmailService>();
+        services.AddVerixoraMessaging(configuration, environment);
         services.AddSingleton<RedisOtpService>();
         services.AddSingleton<IOtpService>(serviceProvider => serviceProvider.GetRequiredService<RedisOtpService>());
         services.AddSingleton<IEmailOtpService>(serviceProvider => serviceProvider.GetRequiredService<RedisOtpService>());

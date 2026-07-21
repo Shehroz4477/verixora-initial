@@ -77,7 +77,7 @@ builder.Services.AddCors(options => options.AddPolicy("VerixoraWeb", policy =>
 builder.Services.AddScoped<IAuditLogService, SignalRAuditLogService>();
 
 // Add Identity module
-builder.Services.AddIdentityInfrastructure(builder.Configuration);
+builder.Services.AddIdentityInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandValidator>();
 builder.Services.AddDevicesInfrastructure(builder.Configuration);
 builder.Services.AddSmartLocksInfrastructure(builder.Configuration);
