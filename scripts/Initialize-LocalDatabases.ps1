@@ -7,8 +7,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# The compose containers hold their own local-only credentials.  This runner never
-# reads or prints them; SQL is streamed to each database container over stdin.
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 function Assert-ContainerRunning {
@@ -23,15 +21,23 @@ function Assert-ContainerRunning {
 function Invoke-SqlServerScript {
     param([Parameter(Mandatory)][string]$Sql, [Parameter(Mandatory)][string]$Database)
 
-    # Windows PowerShell prepends a UTF-8 BOM when piping a string to a native
-    # process. sqlcmd does not discard that BOM from stdin, so strip it only there.
-    if ($env:OS -eq 'Windows_NT') {
-        $Sql | docker exec -i verixora-sqlserver /bin/sh -c 'tail -c +4 | /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$1" -i /dev/stdin' _ $Database | Out-Null
+    # Windows PowerShell adds a UTF-8 BOM to native stdin. Run the container shell
+    # through an argument array, which preserves the shell command as one argument,
+    # then strip that BOM inside the container. Splitting on SQLCMD batch separators
+    # keeps CREATE/ALTER PROCEDURE statements valid.
+    $batches = $Sql -split '(?im)^[ \t]*go[ \t]*(?:--.*)?\r?$'
+    foreach ($batch in $batches) {
+        if ([string]::IsNullOrWhiteSpace($batch)) { continue }
+
+        $arguments = @(
+            'exec', '-i',
+            'verixora-sqlserver',
+            '/bin/sh', '-c',
+            'tail -c +4 | /opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$1" -i /dev/stdin',
+            '_', $Database)
+        $batch | & docker @arguments | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "SQL Server schema execution failed for database '$Database'." }
     }
-    else {
-        $Sql | docker exec -i verixora-sqlserver /bin/sh -c '/opt/mssql-tools18/bin/sqlcmd -C -b -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d "$1" -i /dev/stdin' _ $Database | Out-Null
-    }
-    if ($LASTEXITCODE -ne 0) { throw "SQL Server schema execution failed for database '$Database'." }
 }
 
 function Initialize-SqlServer {
