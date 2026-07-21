@@ -58,10 +58,6 @@ public static class DependencyInjection
         services.AddSingleton<IMqttPublisher>(sp => new MqttPublisher(brokerHost, brokerPort));
         services.AddHostedService<LockCommandOutboxDispatcher>();
 
-        // Audit Log (mock for now; later replace with real AuditLogs module)
-        //services.AddSingleton<IAuditLogService, MockAuditLogService>();
-
-        //services.AddSingleton<IAuthorizationService, MockAuthorizationService>();
         services.AddSingleton<IAuthorizationService, ScheduleBasedAuthorizationService>();
         services.AddSingleton<IFaceTemplateProtector, AesGcmFaceTemplateProtector>();
         _ = mode switch
