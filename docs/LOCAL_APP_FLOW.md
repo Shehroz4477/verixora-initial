@@ -11,10 +11,12 @@ cd infrastructure
 docker compose up -d
 cd ..
 .\scripts\Initialize-LocalDatabases.ps1
-dotnet run --project .\api-host\ApiHost\ApiHost.csproj --launch-profile http
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:ASPNETCORE_URLS = 'http://0.0.0.0:5166'
+dotnet run --project .\api-host\ApiHost\ApiHost.csproj --no-launch-profile
 ```
 
-Keep the API terminal open. The API is available on `http://localhost:5166` and local SMS/email OTPs appear in this terminal only.
+Keep the API terminal open. The API is available on this PC at `http://localhost:5166` and from the same Wi-Fi at `http://192.168.0.102:5166`. Local SMS/email OTPs appear in this terminal only. If Windows asks for firewall permission, allow **Private networks**. Do not expose this debug HTTP API to a public network.
 
 ## 2. Start the web portal
 
@@ -26,19 +28,21 @@ npm run start:web
 
 Open `http://localhost:4200`. The local API allows this origin through the local-only CORS configuration.
 
-## 3. Run the Android application
+## 3. Install the Android application on a physical phone
 
-Create and boot an Android emulator from Android Studio's **Device Manager**. The debug Android build uses `10.0.2.2:5166`, which reaches the API running on the Windows host. It deliberately permits cleartext traffic only for that emulator address; release builds remain HTTPS-only.
+The current debug build targets this PC's current Wi-Fi IP: `192.168.0.102`. Both the PC and phone must be on the same trusted Wi-Fi. It deliberately permits debug-only cleartext traffic only to the emulator, localhost, and this one LAN address; release builds remain HTTPS-only.
 
-With the emulator already running, in the frontend repository run:
+In the frontend repository run:
 
 ```powershell
 npx cap sync android
 cd android
-.\gradlew.bat installDebug
+.\gradlew.bat assembleDebug
 ```
 
-Launch **Verixora** (`com.verixora.mobile`) on the emulator. Do not use the mobile browser preview for registration: the real flow requires the Android device-binding key.
+Copy and install [app-debug.apk](C:/Users/Shehroz/source/repos/Shehroz4477/verixora-frontemd-monoprepo-initial/android/app/build/outputs/apk/debug/app-debug.apk) on the Android phone, then launch **Verixora** (`com.verixora.mobile`). Do not use the mobile browser preview for registration: the real flow requires the Android device-binding key.
+
+If the PC Wi-Fi IP changes, update both `androidPhysicalDeviceApiUrl` in `projects/mobile-app/environments/environment.ts` and the LAN `<domain>` in `android/app/src/debug/res/xml/debug_network_security_config.xml`, then repeat the build. To test through an Android emulator later, set `androidDebugTarget` to `'emulator'` instead.
 
 ## 4. Test the user flow
 
