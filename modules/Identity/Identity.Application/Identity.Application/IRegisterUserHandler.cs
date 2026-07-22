@@ -13,4 +13,4 @@ public record RegisterUserCommand(
     string? Email = null
 ) : IRequest<RegisterUserResult>;
 
-public record RegisterUserResult(Guid UserId, string Message);
+public record RegisterUserResult(Guid UserId, string Token, string Message);

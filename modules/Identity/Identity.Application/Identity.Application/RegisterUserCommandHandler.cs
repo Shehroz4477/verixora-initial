@@ -11,17 +11,20 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpService _otpService;
+    private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly ISystemAdministratorBootstrapPolicy? _systemAdministratorBootstrapPolicy;
 
     public RegisterUserCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         IOtpService otpService,
+        IJwtTokenGenerator jwtTokenGenerator,
         ISystemAdministratorBootstrapPolicy? systemAdministratorBootstrapPolicy = null)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _otpService = otpService;
+        _jwtTokenGenerator = jwtTokenGenerator;
         _systemAdministratorBootstrapPolicy = systemAdministratorBootstrapPolicy;
     }
 
@@ -69,6 +72,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         // Save
         await _userRepository.AddAsync(user, cancellationToken);
 
-        return new RegisterUserResult(user.Id, "User registered successfully.");
+        var token = _jwtTokenGenerator.GenerateToken(user.Id, user.PhoneNumber, user.Role.ToString());
+        return new RegisterUserResult(user.Id, token, "User registered successfully.");
     }
 }

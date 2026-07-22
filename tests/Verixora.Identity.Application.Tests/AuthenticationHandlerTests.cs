@@ -14,7 +14,7 @@ public sealed class AuthenticationHandlerTests
     {
         var repository = new InMemoryUserRepository();
         var otpService = new TestOtpService { RegistrationOtpIsValid = true };
-        var handler = new RegisterUserCommandHandler(repository, new TestPasswordHasher(), otpService);
+        var handler = new RegisterUserCommandHandler(repository, new TestPasswordHasher(), otpService, new TestJwtGenerator());
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
         var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(publicKey);
@@ -28,6 +28,7 @@ public sealed class AuthenticationHandlerTests
         Assert.Equal("device-1", user.TrustedDevice!.DeviceId);
         Assert.Equal(thumbprint, user.TrustedDevice.DeviceFingerprint);
         Assert.Equal(publicKey, user.TrustedDevice.DevicePublicKeySpkiBase64);
+        Assert.Equal("test-jwt", result.Token);
     }
 
     [Fact]
@@ -49,7 +50,7 @@ public sealed class AuthenticationHandlerTests
     [Fact]
     public async Task Registration_rejects_a_fingerprint_that_does_not_match_the_p256_device_key()
     {
-        var handler = new RegisterUserCommandHandler(new InMemoryUserRepository(), new TestPasswordHasher(), new TestOtpService { RegistrationOtpIsValid = true });
+        var handler = new RegisterUserCommandHandler(new InMemoryUserRepository(), new TestPasswordHasher(), new TestOtpService { RegistrationOtpIsValid = true }, new TestJwtGenerator());
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
 
@@ -69,6 +70,7 @@ public sealed class AuthenticationHandlerTests
             repository,
             new TestPasswordHasher(),
             new TestOtpService { RegistrationOtpIsValid = true },
+            new TestJwtGenerator(),
             new FixedSystemAdministratorBootstrapPolicy(phoneNumber));
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
@@ -88,7 +90,7 @@ public sealed class AuthenticationHandlerTests
         var existingUser = new User("+923001234567", "hash:Password!1");
         existingUser.RegisterTrustedDevice("already-bound-device", "old-fingerprint");
         await repository.AddAsync(existingUser, TestContext.Current.CancellationToken);
-        var handler = new RegisterUserCommandHandler(repository, new TestPasswordHasher(), new TestOtpService { RegistrationOtpIsValid = true });
+        var handler = new RegisterUserCommandHandler(repository, new TestPasswordHasher(), new TestOtpService { RegistrationOtpIsValid = true }, new TestJwtGenerator());
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
         var thumbprint = TrustedDevicePublicKey.ValidateAndGetThumbprint(publicKey);
