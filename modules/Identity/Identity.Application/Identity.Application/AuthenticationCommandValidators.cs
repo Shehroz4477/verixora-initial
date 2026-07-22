@@ -9,6 +9,19 @@ public sealed class SendOtpCommandValidator : AbstractValidator<SendOtpCommand>
         RuleFor(command => command.PhoneNumber)
             .Must(value => InternationalPhoneNumber.TryNormalizeE164(value, out _))
             .WithMessage("Phone number must be a valid international E.164 number.");
+        RuleFor(command => command.DeviceId).NotEmpty().MaximumLength(256);
+    }
+}
+
+public sealed class AuthAccessEligibilityQueryValidator : AbstractValidator<AuthAccessEligibilityQuery>
+{
+    public AuthAccessEligibilityQueryValidator()
+    {
+        RuleFor(query => query.DeviceId).NotEmpty().MaximumLength(256);
+        When(query => !string.IsNullOrWhiteSpace(query.PhoneNumber), () =>
+            RuleFor(query => query.PhoneNumber!)
+                .Must(value => InternationalPhoneNumber.TryNormalizeE164(value, out _))
+                .WithMessage("Phone number must be a valid international E.164 number."));
     }
 }
 

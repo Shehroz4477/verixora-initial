@@ -18,15 +18,29 @@ public class AuthController : ControllerBase
         _mediator = mediator;
     }
 
+    [HttpPost("access-eligibility")]
+    [AllowAnonymous]
+    public async Task<IActionResult> AccessEligibility([FromBody] AuthAccessEligibilityQuery query)
+    {
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+
     [HttpPost("send-otp")]
     [AllowAnonymous]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
     {
-        var result = await _mediator.Send(command);
-        return Ok(result);
+        try
+        {
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
     }
 
-    // Update the existing register endpoint (already there, just ensure it's correct)
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)

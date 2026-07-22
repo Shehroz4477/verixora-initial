@@ -103,6 +103,41 @@ public sealed class AuthenticationHandlerTests
     }
 
     [Fact]
+    public async Task Access_eligibility_allows_login_only_for_the_matching_number_and_device()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("+923001234567", "hash:Password!1");
+        user.RegisterTrustedDevice("device-1", "fingerprint-1");
+        await repository.AddAsync(user, TestContext.Current.CancellationToken);
+        var handler = new AuthAccessEligibilityQueryHandler(repository);
+
+        var matching = await handler.Handle(new AuthAccessEligibilityQuery("device-1", "+923001234567"), TestContext.Current.CancellationToken);
+        var mismatch = await handler.Handle(new AuthAccessEligibilityQuery("device-2", "+923001234567"), TestContext.Current.CancellationToken);
+
+        Assert.True(matching.CanLogin);
+        Assert.False(matching.CanRegister);
+        Assert.False(mismatch.CanLogin);
+        Assert.False(mismatch.CanRegister);
+        Assert.Equal("RegisteredToAnotherDevice", mismatch.PhoneStatus);
+    }
+
+    [Fact]
+    public async Task Registration_otp_is_rejected_for_an_existing_number_or_device()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("+923001234567", "hash:Password!1");
+        user.RegisterTrustedDevice("device-1", "fingerprint-1");
+        await repository.AddAsync(user, TestContext.Current.CancellationToken);
+        var handler = new SendOtpCommandHandler(new TestOtpService(), repository);
+
+        var exception = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new SendOtpCommand("+923001234567", "device-1"),
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal("This mobile number is already registered. Sign in from its registered device.", exception.Message);
+    }
+
+    [Fact]
     public void Phone_numbers_are_validated_and_normalized_as_E164()
     {
         Assert.True(InternationalPhoneNumber.TryNormalizeE164("+92 300 1234567", out var normalized));
