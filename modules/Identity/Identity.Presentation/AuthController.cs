@@ -102,6 +102,21 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("email-status")]
+    [Authorize]
+    public async Task<IActionResult> GetEmailStatus()
+    {
+        try
+        {
+            var result = await _mediator.Send(new GetEmailStatusQuery(GetCurrentUserId()));
+            return Ok(result);
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message, code = ex.ErrorCode });
+        }
+    }
+
     [HttpPost("send-verification-email")]
     [Authorize]
     public async Task<IActionResult> SendVerificationEmail()

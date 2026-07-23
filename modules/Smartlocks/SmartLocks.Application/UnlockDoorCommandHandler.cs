@@ -105,6 +105,11 @@ public class UnlockDoorCommandHandler : IRequestHandler<UnlockDoorCommand, Unloc
             {
                 faceMatch = await _faceProvider.VerifyAsync(request.UserId, request.FaceImageStream, cancellationToken);
             }
+            catch (DomainException ex)
+            {
+                await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, $"Face verification rejected: {ex.Message}");
+                throw;
+            }
             catch (Exception)
             {
                 await _auditLogService.LogAsync(smartLock.HomeId, smartLock.DeviceId, request.UserId, "UnlockCommand", false, "Face verification service unavailable");

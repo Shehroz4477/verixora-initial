@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using BuildingBlocks.Domain;
 using FaceVerification.Domain;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -56,6 +57,21 @@ public sealed class FaceVerificationLivenessTests
         Assert.Equal(userId, repository.DeletedUserId);
     }
 
+    [Fact]
+    public async Task Invalid_enrollment_image_is_reported_as_a_validation_error_not_a_service_outage()
+    {
+        var userId = Guid.NewGuid();
+        var configuration = BuildConfiguration(allowPassiveDevelopmentVerification: false);
+        var protector = new AesGcmFaceTemplateProtector(configuration);
+        using var client = new HttpClient(new RejectedCaptureHandler()) { BaseAddress = new Uri("http://face-service.test") };
+        var provider = new PythonFaceVerificationProvider(client, ThreeTemplates(protector.Protect(userId, JsonSerializer.SerializeToUtf8Bytes(new float[128]))), protector, new TestHostEnvironment("Development"), configuration);
+        var images = new List<Stream> { new MemoryStream([1]), new MemoryStream([2]), new MemoryStream([3]) };
+
+        var exception = await Assert.ThrowsAsync<DomainException>(() => provider.EnrollAsync(userId, images, TestContext.Current.CancellationToken));
+
+        Assert.Equal("Each image must contain exactly one face", exception.Message);
+    }
+
     private static IConfiguration BuildConfiguration(bool allowPassiveDevelopmentVerification)
         => new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -91,6 +107,15 @@ public sealed class FaceVerificationLivenessTests
             => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("{\"match\":true,\"confidence\":0.99,\"livenessPassed\":false}", Encoding.UTF8, "application/json")
+            });
+    }
+
+    private sealed class RejectedCaptureHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent("{\"detail\":\"Each image must contain exactly one face\"}", Encoding.UTF8, "application/json")
             });
     }
 

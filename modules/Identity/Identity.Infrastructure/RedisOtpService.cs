@@ -112,10 +112,15 @@ public sealed class RedisOtpService : IOtpService, IEmailOtpService
             await deliver(code);
             return code;
         }
-        catch
+        catch (Exception exception)
         {
             await _database.KeyDeleteAsync(new RedisKey[] { otpKey, attemptKey, cooldownKey });
-            throw;
+            if (exception is DomainException)
+                throw;
+
+            // Do not leak a provider response (which can contain account metadata)
+            // and do not leave a code in Redis when no message was delivered.
+            throw new DomainException("We could not deliver a verification code right now. Please try again shortly.");
         }
     }
 

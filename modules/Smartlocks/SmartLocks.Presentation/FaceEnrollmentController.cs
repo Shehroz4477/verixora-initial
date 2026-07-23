@@ -60,7 +60,11 @@ public sealed class FaceEnrollmentController(IFaceVerificationProvider faceVerif
         }
     }
 
+    // End users can replace a template by completing a fresh enrollment, but cannot
+    // remove the biometric factor from their mobile app. This endpoint remains for
+    // audited System Administrator recovery workflows only.
     [HttpDelete("enrollment")]
+    [Authorize(Roles = "SystemAdmin")]
     public async Task<IActionResult> DeleteEnrollment(CancellationToken cancellationToken)
     {
         try

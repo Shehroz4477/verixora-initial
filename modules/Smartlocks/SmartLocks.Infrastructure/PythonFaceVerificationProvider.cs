@@ -50,8 +50,8 @@ public class PythonFaceVerificationProvider : IFaceVerificationProvider
         form.Add(streamContent, "image", "face.jpg");
         form.Add(new StringContent(JsonSerializer.Serialize(embeddings)), "referenceEmbeddingsJson");
 
-        var response = await _httpClient.PostAsync("/verify", form, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        using var response = await _httpClient.PostAsync("/verify", form, cancellationToken);
+        await EnsureFaceServiceSuccessAsync(response, "verification", cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<FaceVerifyResponse>(cancellationToken: cancellationToken);
         // Passive embedding comparison does not prove a live person is present.
@@ -74,8 +74,8 @@ public class PythonFaceVerificationProvider : IFaceVerificationProvider
             form.Add(streamContent, "images", $"face_{i++}.jpg");
         }
 
-        var response = await _httpClient.PostAsync("/extract", form, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        using var response = await _httpClient.PostAsync("/extract", form, cancellationToken);
+        await EnsureFaceServiceSuccessAsync(response, "enrollment", cancellationToken);
 
         var result = await response.Content.ReadFromJsonAsync<FaceExtractResponse>(cancellationToken: cancellationToken);
         var embeddings = result?.Embeddings?.ToArray() ?? [];
@@ -96,6 +96,44 @@ public class PythonFaceVerificationProvider : IFaceVerificationProvider
     {
         if (embeddings.Count == 0 || embeddings.Any(embedding => embedding.Length != EmbeddingDimensions || embedding.Any(value => !float.IsFinite(value))))
             throw new DomainException("Face service returned an invalid biometric template.");
+    }
+
+    private static async Task EnsureFaceServiceSuccessAsync(
+        HttpResponseMessage response,
+        string operation,
+        CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        // A 4xx response means the submitted capture failed validation (for example,
+        // no face, multiple faces, an unsupported image, or an unusable frame). It is
+        // not a face-service outage and must be shown honestly to the person enrolling.
+        if ((int)response.StatusCode is >= 400 and < 500)
+        {
+            var detail = await ReadProblemDetailAsync(response, cancellationToken);
+            throw new DomainException(string.IsNullOrWhiteSpace(detail)
+                ? $"Face {operation} rejected this capture. Use one clear, well-lit image containing only your face."
+                : detail);
+        }
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static async Task<string?> ReadProblemDetailAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            return document.RootElement.TryGetProperty("detail", out var detail)
+                && detail.ValueKind == JsonValueKind.String
+                ? detail.GetString()
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private class FaceVerifyResponse
