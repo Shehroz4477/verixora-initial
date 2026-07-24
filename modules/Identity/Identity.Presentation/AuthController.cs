@@ -3,6 +3,7 @@ using Identity.Application;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace Identity.Presentation;
@@ -28,6 +29,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("send-otp")]
     [AllowAnonymous]
+    [EnableRateLimiting("otp")]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
     {
         try
@@ -58,6 +60,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("send-login-otp")]
     [AllowAnonymous]
+    [EnableRateLimiting("otp")]
     public async Task<IActionResult> SendLoginOtp([FromBody] SendLoginOtpCommand command)
     {
         try
@@ -151,6 +154,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("web/send-login-otp")]
     [AllowAnonymous]
+    [EnableRateLimiting("otp")]
     public async Task<IActionResult> WebSendLoginOtp([FromBody] WebLoginSendOtpCommand command)
     {
         try

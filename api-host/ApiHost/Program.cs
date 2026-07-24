@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.RateLimiting;
 using FluentValidation;
 using Identity.Infrastructure;
 using MediatR;
@@ -74,6 +76,32 @@ builder.Services.AddCors(options => options.AddPolicy("VerixoraWeb", policy =>
     policy.WithOrigins(allowedCorsOrigins).AllowAnyHeader().AllowAnyMethod();
 }));
 
+// Destination-level OTP throttling is handled in Redis. This independent,
+// IP-partitioned limit protects the public endpoints from automated SMS/email
+// abuse before a code is issued.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Too many verification-code requests. Please wait and try again." },
+            cancellationToken: cancellationToken);
+    };
+    options.AddPolicy("otp", httpContext =>
+    {
+        var clientAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(clientAddress, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+});
+
 builder.Services.AddScoped<IAuditLogService, SignalRAuditLogService>();
 
 // Add Identity module
@@ -120,6 +148,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("VerixoraWeb");
 app.UseMiddleware<ApiExceptionHandlingMiddleware>();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
